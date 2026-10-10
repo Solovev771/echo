@@ -7,7 +7,7 @@ from pathlib import Path
 from fpdf import FPDF
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build_mixes_data import AROMA_MAP, MIXES, guest_name, guest_line
+from build_mixes_data import AROMA_MAP, AROMA_WHY, MIXES, guest_name, guest_line
 
 OUT = Path(__file__).resolve().parents[1] / "docs" / "AURA_Special_miksy.pdf"
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -168,13 +168,26 @@ def build():
     )
 
     h1(pdf, "Словарь ароматов")
+    body(
+        pdf,
+        "Гостю — правое имя. Станции — левое. Почему так назвали — под каждой строкой.",
+        size=9,
+        color=MUTED,
+    )
     for tech, guest in sorted(AROMA_MAP.items()):
-        ensure_space(pdf, 7)
+        ensure_space(pdf, 14)
         reset_x(pdf)
-        pdf.set_font("DejaVu", "", 9)
-        pdf.set_text_color(*BLACK)
+        pdf.set_font("DejaVu", "B", 9)
+        pdf.set_text_color(*ORANGE)
         pdf.multi_cell(0, 4.5, f"{tech}  →  {guest}")
         reset_x(pdf)
+        why = AROMA_WHY.get(tech, "")
+        if why:
+            pdf.set_font("DejaVu", "", 8)
+            pdf.set_text_color(*MUTED)
+            pdf.multi_cell(0, 4.2, why)
+            reset_x(pdf)
+            pdf.ln(2)
 
     h1(pdf, "Связь с концепцией заведения")
     body(

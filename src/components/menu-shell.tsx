@@ -71,13 +71,13 @@ export function MenuShell() {
           <TabsList className="menu-tabs h-auto w-full flex-wrap justify-start gap-2 rounded-none bg-transparent p-0">
             <TabsTrigger
               value="menu"
-              className="menu-tab rounded-none border border-[var(--aura-ink-soft)]/30 bg-transparent px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-[var(--aura-ink-soft)] data-[state=active]:border-[var(--aura-yellow)] data-[state=active]:bg-[var(--aura-yellow)] data-[state=active]:text-black"
+              className="menu-tab rounded-none border border-[var(--aura-ink-soft)]/30 bg-transparent px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-[var(--aura-ink-soft)] data-active:border-[var(--aura-yellow)] data-active:bg-[var(--aura-yellow)] data-active:text-black"
             >
               Меню
             </TabsTrigger>
             <TabsTrigger
               value="special"
-              className="menu-tab rounded-none border border-[var(--aura-orange)]/50 bg-transparent px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-[var(--aura-orange)] data-[state=active]:border-[var(--aura-orange)] data-[state=active]:bg-[var(--aura-orange)] data-[state=active]:text-black"
+              className="menu-tab rounded-none border border-[var(--aura-orange)]/50 bg-transparent px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-[var(--aura-orange)] data-active:border-[var(--aura-orange)] data-active:bg-[var(--aura-orange)] data-active:text-black"
             >
               Special
             </TabsTrigger>
@@ -89,8 +89,7 @@ export function MenuShell() {
                 Основное меню
               </h2>
               <p className="mt-3 font-[family-name:var(--font-story)] text-base leading-relaxed text-[var(--aura-ink-soft)]">
-                Переход от повседневности к внутреннему состоянию. Классика зала и
-                зоны пространства — здесь. Авторские миксы — во вкладке Special.
+                Классика и зоны зала. Авторские миксы — во вкладке Special.
               </p>
             </section>
 
@@ -129,8 +128,7 @@ export function MenuShell() {
                 Авторские миксы
               </h2>
               <p className="mt-3 font-[family-name:var(--font-story)] text-base leading-relaxed text-[var(--aura-ink-soft)]">
-                Девять глав внутреннего путешествия. Один микс — одно состояние.
-                Выбери — и замедлись.
+                Девять миксов. Один — под настроение. Без процентов и лишнего шума.
               </p>
             </section>
 

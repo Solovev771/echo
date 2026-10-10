@@ -23,7 +23,7 @@ MUTED = RGBColor(0x55, 0x55, 0x55)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 
 
-from build_mixes_data import AROMA_MAP, MIXES, guest_name, guest_line
+from build_mixes_data import AROMA_MAP, AROMA_WHY, MIXES, guest_name, guest_line
 
 
 def set_run_font(run, name="Georgia", size=11, bold=False, color=BLACK, italic=False):
@@ -168,24 +168,22 @@ def build():
     )
 
     add_heading_styled(doc, "Словарь ароматов", level=1)
-    glossary = doc.add_table(rows=1 + len(AROMA_MAP), cols=2)
-    for i, h in enumerate(("Техн. имя (станция)", "Для гостя (меню)")):
-        cell = glossary.rows[0].cells[i]
-        cell.text = ""
-        run = cell.paragraphs[0].add_run(h)
-        set_run_font(run, size=9, bold=True, color=BLACK)
-        shade_cell(cell, "F5C518")
-        set_cell_borders(cell)
-    for ri, (tech, guest) in enumerate(sorted(AROMA_MAP.items()), start=1):
-        for ci, val in enumerate((tech, guest)):
-            cell = glossary.rows[ri].cells[ci]
-            cell.text = ""
-            run = cell.paragraphs[0].add_run(val)
-            set_run_font(run, size=9, color=BLACK)
-            if ri % 2 == 0:
-                shade_cell(cell, "FFF8E7")
-            set_cell_borders(cell, size="4")
-    doc.add_paragraph()
+    add_body(
+        doc,
+        "Гостю говорим правое имя. На станции работаем по левому. "
+        "Ниже — почему гостевое имя звучит именно так.",
+        size=10,
+        color=MUTED,
+    )
+    for tech, guest in sorted(AROMA_MAP.items()):
+        p = doc.add_paragraph()
+        p.paragraph_format.space_before = Pt(8)
+        p.paragraph_format.space_after = Pt(2)
+        r = p.add_run(f"{tech}  →  {guest}")
+        set_run_font(r, size=11, bold=True, color=ORANGE)
+        why = AROMA_WHY.get(tech, "")
+        if why:
+            add_body(doc, why, size=9, color=MUTED, space_after=4)
 
     add_heading_styled(doc, "Связь с концепцией заведения", level=1)
     add_body(
