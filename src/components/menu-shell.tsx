@@ -71,13 +71,13 @@ export function MenuShell() {
           <TabsList className="menu-tabs h-auto w-full flex-wrap justify-start gap-2 rounded-none bg-transparent p-0">
             <TabsTrigger
               value="menu"
-              className="menu-tab rounded-none border border-[var(--aura-ink-soft)]/30 bg-transparent px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-[var(--aura-ink-soft)] data-active:border-[var(--aura-yellow)] data-active:bg-[var(--aura-yellow)] data-active:text-black"
+              className="menu-tab rounded-none border border-[var(--aura-ink-soft)]/30 bg-transparent px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-[var(--aura-ink-soft)] after:hidden"
             >
               Меню
             </TabsTrigger>
             <TabsTrigger
               value="special"
-              className="menu-tab rounded-none border border-[var(--aura-orange)]/50 bg-transparent px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-[var(--aura-orange)] data-active:border-[var(--aura-orange)] data-active:bg-[var(--aura-orange)] data-active:text-black"
+              className="menu-tab menu-tab-special rounded-none border border-[var(--aura-orange)]/50 bg-transparent px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-[var(--aura-orange)] after:hidden"
             >
               Special
             </TabsTrigger>

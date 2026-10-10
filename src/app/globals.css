@@ -218,6 +218,22 @@
   animation: brand-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Beat shadcn/base-ui default data-active:bg-background on menu tabs */
+.menu-tab[data-active] {
+  color: #000 !important;
+  background-color: var(--aura-yellow) !important;
+  border-color: var(--aura-yellow) !important;
+}
+
+.menu-tab.menu-tab-special[data-active] {
+  background-color: var(--aura-orange) !important;
+  border-color: var(--aura-orange) !important;
+}
+
+.menu-tab[data-active]::after {
+  opacity: 0 !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .atmosphere,
   .sun-flare,
