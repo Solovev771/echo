@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { classicSections, specialMixes, type Mix } from "@/data/mixes";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +42,7 @@ function MixPanel({ mix }: { mix: Mix }) {
 }
 
 export function MenuShell() {
+  const [tab, setTab] = useState<"menu" | "special">("special");
   const [selectedId, setSelectedId] = useState(specialMixes[0]?.id ?? "");
   const selected =
     specialMixes.find((m) => m.id === selectedId) ?? specialMixes[0];
@@ -67,23 +67,43 @@ export function MenuShell() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 pb-16 pt-8 sm:px-8">
-        <Tabs defaultValue="special" className="gap-8">
-          <TabsList className="menu-tabs h-auto w-full flex-wrap justify-start gap-2 rounded-none bg-transparent p-0">
-            <TabsTrigger
-              value="menu"
-              className="menu-tab rounded-none border border-[var(--aura-ink-soft)]/30 bg-transparent px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-[var(--aura-ink-soft)] after:hidden"
-            >
-              Меню
-            </TabsTrigger>
-            <TabsTrigger
-              value="special"
-              className="menu-tab menu-tab-special rounded-none border border-[var(--aura-orange)]/50 bg-transparent px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-[var(--aura-orange)] after:hidden"
-            >
-              Special
-            </TabsTrigger>
-          </TabsList>
+        <div
+          role="tablist"
+          aria-label="Разделы меню"
+          className="flex flex-wrap gap-2"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "menu"}
+            onClick={() => setTab("menu")}
+            className={cn(
+              "rounded-none border px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] transition-colors",
+              tab === "menu"
+                ? "border-[var(--aura-yellow)] bg-[var(--aura-yellow)] text-black"
+                : "border-[var(--aura-ink-soft)]/30 bg-transparent text-[var(--aura-ink-soft)]",
+            )}
+          >
+            Меню
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "special"}
+            onClick={() => setTab("special")}
+            className={cn(
+              "rounded-none border px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] transition-colors",
+              tab === "special"
+                ? "border-[var(--aura-orange)] bg-[var(--aura-orange)] text-black"
+                : "border-[var(--aura-orange)]/50 bg-transparent text-[var(--aura-orange)]",
+            )}
+          >
+            Special
+          </button>
+        </div>
 
-          <TabsContent value="menu" className="mt-0 outline-none">
+        {tab === "menu" ? (
+          <div className="mt-8">
             <section className="section-fade max-w-2xl">
               <h2 className="font-[family-name:var(--font-display)] text-3xl uppercase tracking-[0.06em] text-[var(--aura-yellow)]">
                 Основное меню
@@ -117,9 +137,9 @@ export function MenuShell() {
                 </section>
               ))}
             </div>
-          </TabsContent>
-
-          <TabsContent value="special" className="mt-0 outline-none">
+          </div>
+        ) : (
+          <div className="mt-8">
             <section className="section-fade max-w-2xl">
               <p className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.3em] text-[var(--aura-orange)]">
                 Special
@@ -159,8 +179,8 @@ export function MenuShell() {
                 <MixPanel mix={selected} key={selected.id} />
               </div>
             ) : null}
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </main>
     </div>
   );
