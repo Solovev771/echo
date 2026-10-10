@@ -417,9 +417,14 @@ def set_run_font(run, name="Georgia", size=11, bold=False, color=BLACK, italic=F
 def shade_cell(cell, hex_color: str):
     tc = cell._tc
     tcPr = tc.get_or_add_tcPr()
+    # Replace existing shading — duplicate w:shd breaks Microsoft Word
+    for child in list(tcPr):
+        if child.tag == qn("w:shd"):
+            tcPr.remove(child)
     shd = OxmlElement("w:shd")
     shd.set(qn("w:fill"), hex_color)
     shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
     tcPr.append(shd)
 
 
@@ -558,10 +563,6 @@ def build():
         cell.text = ""
         run = cell.paragraphs[0].add_run(h)
         set_run_font(run, size=9, bold=True, color=BLACK)
-        shade_cell(cell, "E86A17")
-        run.font.color.rgb = WHITE
-        # re-set after shade for visibility
-        run.font.color.rgb = RGBColor(0x11, 0x11, 0x11)
         shade_cell(cell, "F5C518")
         set_cell_borders(cell)
 

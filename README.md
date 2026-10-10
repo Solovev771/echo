@@ -6,8 +6,10 @@
 
 - Веб-меню с вкладками **Меню** и **Special** (палитра: жёлтый / чёрный / оранжевый)
 - 9 авторских миксов со сторитейлингом, зонами зала и процентами для станции
-- Рабочий документ: [`docs/AURA_Special_miksy.docx`](docs/AURA_Special_miksy.docx)
-- Генератор документа: `scripts/build-mixes-doc.py`
+- Рабочие документы:
+  - [`docs/AURA_Kontseptsiya.docx`](docs/AURA_Kontseptsiya.docx) (+ PDF)
+  - [`docs/AURA_Special_miksy.docx`](docs/AURA_Special_miksy.docx) (+ PDF)
+- Генераторы: `scripts/build-concept-doc.py`, `scripts/build-mixes-doc.py`
 
 ## Запуск
 
