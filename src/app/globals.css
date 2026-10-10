@@ -48,11 +48,11 @@
 }
 
 :root {
-  --aura-black: #0a0a0a;
-  --aura-yellow: #f5c518;
+  --aura-black: #000000;
+  --aura-yellow: #e0a000;
   --aura-orange: #e86a17;
-  --aura-ink: #fff4d6;
-  --aura-ink-soft: #c9b48a;
+  --aura-ink: #f5efe3;
+  --aura-ink-soft: #b9a88a;
 
   --background: #0a0a0a;
   --foreground: #fff4d6;

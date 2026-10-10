@@ -5,49 +5,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { classicSections, specialMixes, type Mix } from "@/data/mixes";
 import { cn } from "@/lib/utils";
 
-function RecipeBars({ recipe }: { recipe: Mix["recipe"] }) {
+function NoteLine({ notes }: { notes: Mix["notes"] }) {
   return (
-    <ul className="mt-5 space-y-2.5">
-      {recipe.map((item, index) => (
-        <li key={item.name} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1">
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="font-[family-name:var(--font-body)] text-sm text-[var(--aura-ink-soft)]">
-              {item.name}
-            </span>
-            <span className="font-[family-name:var(--font-display)] text-sm tabular-nums text-[var(--aura-yellow)]">
-              {item.percent}%
-            </span>
-          </div>
-          <div className="col-span-2 h-1 overflow-hidden bg-black/40">
-            <div
-              className="recipe-bar h-full origin-left bg-[linear-gradient(90deg,var(--aura-yellow),var(--aura-orange))]"
-              style={{
-                width: `${item.percent}%`,
-                animationDelay: `${index * 80}ms`,
-              }}
-            />
-          </div>
-        </li>
-      ))}
-    </ul>
+    <p className="mt-6 font-[family-name:var(--font-body)] text-sm leading-relaxed tracking-wide text-[var(--aura-ink-soft)]">
+      {notes.map((n) => n.name).join(" · ")}
+    </p>
   );
 }
 
-function MixPanel({ mix, active }: { mix: Mix; active: boolean }) {
+function MixPanel({ mix }: { mix: Mix }) {
   return (
-    <article
-      className={cn(
-        "mix-panel relative overflow-hidden border border-[var(--aura-yellow)]/25 bg-black/55 p-5 sm:p-7",
-        active && "mix-panel-active",
-      )}
-    >
+    <article className="mix-panel relative overflow-hidden border border-[var(--aura-yellow)]/20 bg-black/50 p-5 sm:p-7">
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(245,197,24,0.22),transparent_70%)]"
+        className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(224,160,0,0.18),transparent_70%)]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(232,106,23,0.18),transparent_70%)]"
+        className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(232,106,23,0.14),transparent_70%)]"
       />
 
       <p className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.28em] text-[var(--aura-orange)]">
@@ -59,20 +34,18 @@ function MixPanel({ mix, active }: { mix: Mix; active: boolean }) {
       <p className="mt-2 font-[family-name:var(--font-body)] text-sm text-[var(--aura-ink-soft)]">
         {mix.character}
       </p>
-      <p className="mt-5 max-w-xl font-[family-name:var(--font-story)] text-base leading-relaxed text-[var(--aura-ink)] sm:text-lg">
+      <p className="mt-5 max-w-2xl font-[family-name:var(--font-story)] text-base leading-relaxed text-[var(--aura-ink)] sm:text-lg">
         {mix.story}
       </p>
-      <p className="mt-4 font-[family-name:var(--font-body)] text-xs uppercase tracking-[0.18em] text-[var(--aura-orange)]/90">
-        {mix.profile}
-      </p>
-      <RecipeBars recipe={mix.recipe} />
+      <NoteLine notes={mix.notes} />
     </article>
   );
 }
 
 export function MenuShell() {
   const [selectedId, setSelectedId] = useState(specialMixes[0]?.id ?? "");
-  const selected = specialMixes.find((m) => m.id === selectedId) ?? specialMixes[0];
+  const selected =
+    specialMixes.find((m) => m.id === selectedId) ?? specialMixes[0];
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden bg-[var(--aura-black)] text-[var(--aura-ink)]">
@@ -82,14 +55,14 @@ export function MenuShell() {
       <header className="relative z-10 mx-auto flex max-w-6xl items-end justify-between gap-4 px-5 pb-2 pt-8 sm:px-8 sm:pt-10">
         <div className="brand-rise">
           <p className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.35em] text-[var(--aura-orange)]">
-            Hookah · Inner world
+            HookahPlace · Aura
           </p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-5xl font-semibold uppercase leading-none tracking-[0.08em] text-[var(--aura-yellow)] sm:text-7xl">
             Аура
           </h1>
         </div>
-        <p className="brand-rise max-w-[12rem] text-right font-[family-name:var(--font-body)] text-[11px] leading-snug text-[var(--aura-ink-soft)] sm:max-w-xs sm:text-xs">
-          Меню зала. Special — авторские миксы как главы путешествия.
+        <p className="brand-rise max-w-[14rem] text-right font-[family-name:var(--font-body)] text-[11px] leading-snug text-[var(--aura-ink-soft)] sm:max-w-xs sm:text-xs">
+          Здесь каждая деталь помогает замедлиться и насладиться моментом.
         </p>
       </header>
 
@@ -116,8 +89,8 @@ export function MenuShell() {
                 Основное меню
               </h2>
               <p className="mt-3 font-[family-name:var(--font-story)] text-base leading-relaxed text-[var(--aura-ink-soft)]">
-                Классика и зоны пространства. Авторская линейка — во вкладке Special:
-                жёлтый / чёрный / оранжевый акцент, один микс — одно состояние.
+                Переход от повседневности к внутреннему состоянию. Классика зала и
+                зоны пространства — здесь. Авторские миксы — во вкладке Special.
               </p>
             </section>
 
@@ -130,7 +103,7 @@ export function MenuShell() {
                   <p className="mt-2 font-[family-name:var(--font-body)] text-sm text-[var(--aura-ink-soft)]">
                     {section.note}
                   </p>
-                  <ul className="mt-6 space-y-4 border-t border-[var(--aura-yellow)]/20 pt-5">
+                  <ul className="mt-6 space-y-4 border-t border-[var(--aura-yellow)]/15 pt-5">
                     {section.items.map((item) => (
                       <li key={item.name}>
                         <p className="font-[family-name:var(--font-display)] text-lg uppercase tracking-[0.04em] text-[var(--aura-yellow)]">
@@ -150,14 +123,14 @@ export function MenuShell() {
           <TabsContent value="special" className="mt-0 outline-none">
             <section className="section-fade max-w-2xl">
               <p className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.3em] text-[var(--aura-orange)]">
-                Special menu
+                Special
               </p>
               <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl uppercase tracking-[0.06em] text-[var(--aura-yellow)] sm:text-4xl">
                 Авторские миксы
               </h2>
               <p className="mt-3 font-[family-name:var(--font-story)] text-base leading-relaxed text-[var(--aura-ink-soft)]">
-                Девять тем. Одна эмоция на чашу. Выбери состояние — состав и история
-                откроются ниже.
+                Девять глав внутреннего путешествия. Один микс — одно состояние.
+                Выбери — и замедлись.
               </p>
             </section>
 
@@ -173,7 +146,7 @@ export function MenuShell() {
                       "mix-chip shrink-0 border px-4 py-2 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.16em] transition-colors duration-300",
                       active
                         ? "border-[var(--aura-yellow)] bg-[var(--aura-yellow)] text-black"
-                        : "border-[var(--aura-yellow)]/30 bg-black/40 text-[var(--aura-yellow)] hover:border-[var(--aura-orange)] hover:text-[var(--aura-orange)]",
+                        : "border-[var(--aura-yellow)]/25 bg-black/35 text-[var(--aura-yellow)] hover:border-[var(--aura-orange)] hover:text-[var(--aura-orange)]",
                     )}
                     style={{ animationDelay: `${index * 40}ms` }}
                   >
@@ -185,13 +158,9 @@ export function MenuShell() {
 
             {selected ? (
               <div className="mt-6">
-                <MixPanel mix={selected} active key={selected.id} />
+                <MixPanel mix={selected} key={selected.id} />
               </div>
             ) : null}
-
-            <p className="mt-8 font-[family-name:var(--font-body)] text-xs text-[var(--aura-ink-soft)]">
-              Проценты — для станции. Гостю сначала имя, характер и история.
-            </p>
           </TabsContent>
         </Tabs>
       </main>

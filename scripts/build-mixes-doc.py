@@ -23,7 +23,7 @@ MUTED = RGBColor(0x55, 0x55, 0x55)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 
 
-from build_mixes_data import MIXES
+from build_mixes_data import AROMA_MAP, MIXES, guest_name, guest_line
 
 
 def set_run_font(run, name="Georgia", size=11, bold=False, color=BLACK, italic=False):
@@ -100,9 +100,9 @@ def recipe_line(recipe):
 
 
 def add_recipe_table(doc, recipe):
-    table = doc.add_table(rows=1 + len(recipe), cols=3)
+    table = doc.add_table(rows=1 + len(recipe), cols=4)
     table.style = "Table Grid"
-    headers = ("Компонент", "%", "Грамм на 20 г")
+    headers = ("Техн. имя", "Для гостя", "%", "Г / 20 г")
     for i, h in enumerate(headers):
         cell = table.rows[0].cells[i]
         cell.text = ""
@@ -113,7 +113,7 @@ def add_recipe_table(doc, recipe):
         set_cell_borders(cell, "111111", "6")
     for ri, (name, pct) in enumerate(recipe, start=1):
         grams = round(20 * pct / 100, 1)
-        values = (name, str(pct), str(grams))
+        values = (name, guest_name(name), str(pct), str(grams))
         for ci, val in enumerate(values):
             cell = table.rows[ri].cells[ci]
             cell.text = ""
@@ -150,9 +150,9 @@ def build():
 
     add_body(
         doc,
-        "Документ собран из черновых итераций: убран служебный текст, сторитейлинг "
-        "приведён к языку заведения (не парфюм, а чаша и поле), на каждую тему выбран "
-        "рекомендуемый микс для Special-меню. Остальные итерации — для тестов и подстройки под гостя.",
+        "HookahPlace Aura · hpaura.ru. В меню гостю — поэтические имена ароматов. "
+        "В техничке — исходные названия табака + % и граммовка. "
+        "Сторитейлинг собран из концепции заведения и тона сайта: замедлиться и насладиться моментом.",
         size=10,
         color=MUTED,
     )
@@ -160,20 +160,40 @@ def build():
     add_heading_styled(doc, "Как пользоваться", level=1)
     add_body(
         doc,
-        "1. В меню гостю — название, короткий сторитейлинг и рекомендуемая итерация (метка «МЕНЮ»).\n"
-        "2. На станции — таблица % и граммовка на 20 г закладки; пропорции можно масштабировать.\n"
-        "3. Итерации 2–3 — запасные характеры той же темы: мягче / жёстче / глубже.\n"
-        "4. Зона зала подсказывает, куда логично вести гостя с этим миксом.\n"
-        "5. Сторитейлинг — сухой, «гадальный» тон без слащавости: коротко, по делу, в голосе Ауры.",
+        "1. Гостю — имя микса, сторитейлинг и гостевые ноты без процентов.\n"
+        "2. На станции — техническое имя, % и граммовка на 20 г.\n"
+        "3. Итерации 2–3 — запасные характеры той же темы.\n"
+        "4. Зона зала подсказывает, куда вести гостя с этим миксом.\n"
+        "5. Тон: сдержанный, в голосе Ауры — без слащавости.",
     )
+
+    add_heading_styled(doc, "Словарь ароматов", level=1)
+    glossary = doc.add_table(rows=1 + len(AROMA_MAP), cols=2)
+    for i, h in enumerate(("Техн. имя (станция)", "Для гостя (меню)")):
+        cell = glossary.rows[0].cells[i]
+        cell.text = ""
+        run = cell.paragraphs[0].add_run(h)
+        set_run_font(run, size=9, bold=True, color=BLACK)
+        shade_cell(cell, "F5C518")
+        set_cell_borders(cell)
+    for ri, (tech, guest) in enumerate(sorted(AROMA_MAP.items()), start=1):
+        for ci, val in enumerate((tech, guest)):
+            cell = glossary.rows[ri].cells[ci]
+            cell.text = ""
+            run = cell.paragraphs[0].add_run(val)
+            set_run_font(run, size=9, color=BLACK)
+            if ri % 2 == 0:
+                shade_cell(cell, "FFF8E7")
+            set_cell_borders(cell, size="4")
+    doc.add_paragraph()
 
     add_heading_styled(doc, "Связь с концепцией заведения", level=1)
     add_body(
         doc,
+        "«Здесь каждая деталь помогает замедлиться и насладиться моментом.» "
         "Аура — переход от повседневности к внутреннему состоянию. "
-        "Special-миксы — не просто вкусы, а главы путешествия по зонам: "
-        "нейтральный вход, зелёная мистика, сине-фиолетовый космос, сектор солнечного света. "
-        "Каждый микс держит одну эмоцию. Не смешивайте темы в одной подаче без запроса гостя.",
+        "Special-миксы — главы путешествия по зонам: нейтральный вход, зелёная мистика, "
+        "сине-фиолетовый космос, сектор солнечного света. Один микс — одна эмоция.",
     )
 
     # Summary table
@@ -222,7 +242,8 @@ def build():
         menu_it = next(x for x in mix["iterations"] if x["n"] == mix["menu"])
         add_heading_styled(doc, f"Рекомендуемый микс · Итерация {menu_it['n']}", level=2)
         add_body(doc, menu_it["note"], size=10, color=MUTED)
-        add_body(doc, recipe_line(menu_it["recipe"]), size=11)
+        add_body(doc, f"Гостю: {guest_line(menu_it['recipe'])}", size=10)
+        add_body(doc, f"Станция: {recipe_line(menu_it['recipe'])}", size=10)
         add_recipe_table(doc, menu_it["recipe"])
         add_body(doc, menu_it["story"], italic=True, size=10)
 

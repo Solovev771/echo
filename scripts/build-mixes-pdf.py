@@ -7,7 +7,7 @@ from pathlib import Path
 from fpdf import FPDF
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build_mixes_data import MIXES
+from build_mixes_data import AROMA_MAP, MIXES, guest_name, guest_line
 
 OUT = Path(__file__).resolve().parents[1] / "docs" / "AURA_Special_miksy.pdf"
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -97,22 +97,22 @@ def label(pdf, key, value):
 def recipe_table(pdf, recipe):
     ensure_space(pdf, 8 + 6 * (len(recipe) + 1))
     reset_x(pdf)
-    col_w = [70, 25, 40]
-    headers = ["Компонент", "%", "Грамм на 20 г"]
-    pdf.set_font("DejaVu", "B", 9)
+    col_w = [45, 55, 18, 30]
+    headers = ["Техн.", "Гостю", "%", "Г/20г"]
+    pdf.set_font("DejaVu", "B", 8)
     pdf.set_fill_color(*YELLOW)
     pdf.set_text_color(*BLACK)
     for i, h in enumerate(headers):
         pdf.cell(col_w[i], 7, h, border=1, fill=True)
     pdf.ln()
     reset_x(pdf)
-    pdf.set_font("DejaVu", "", 9)
+    pdf.set_font("DejaVu", "", 8)
     for ri, (name, pct) in enumerate(recipe):
         grams = round(20 * pct / 100, 1)
         fill = ri % 2 == 1
         if fill:
             pdf.set_fill_color(*ROW_ALT)
-        vals = [name, str(pct), str(grams)]
+        vals = [name, guest_name(name), str(pct), str(grams)]
         for i, v in enumerate(vals):
             pdf.cell(col_w[i], 6.5, v, border=1, fill=fill)
         pdf.ln()
@@ -151,9 +151,8 @@ def build():
     pdf.ln(6)
     body(
         pdf,
-        "Документ собран из черновых итераций: сторитейлинг приведён к языку заведения "
-        "(чаша и поле), на каждую тему выбран рекомендуемый микс для Special-меню. "
-        "Остальные итерации — для тестов и подстройки под гостя.",
+        "HookahPlace Aura · hpaura.ru. Гостю — поэтические имена. Станции — техн. названия + %. "
+        "«Здесь каждая деталь помогает замедлиться и насладиться моментом.»",
         size=10,
         color=MUTED,
     )
@@ -161,19 +160,28 @@ def build():
     h1(pdf, "Как пользоваться")
     body(
         pdf,
-        "1. В меню гостю — название, короткий сторитейлинг и рекомендуемая итерация (метка «МЕНЮ»).\n"
-        "2. На станции — таблица % и граммовка на 20 г закладки; пропорции можно масштабировать.\n"
-        "3. Итерации 2–3 — запасные характеры той же темы: мягче / жёстче / глубже.\n"
-        "4. Зона зала подсказывает, куда логично вести гостя с этим миксом.\n"
-        "5. Сторитейлинг — сухой, «гадальный» тон без слащавости.",
+        "1. Гостю — имя микса, сторитейлинг и гостевые ноты без процентов.\n"
+        "2. На станции — техническое имя, % и граммовка на 20 г.\n"
+        "3. Итерации 2–3 — запасные характеры той же темы.\n"
+        "4. Зона зала подсказывает подачу.\n"
+        "5. Тон: сдержанный, в голосе Ауры.",
     )
+
+    h1(pdf, "Словарь ароматов")
+    for tech, guest in sorted(AROMA_MAP.items()):
+        ensure_space(pdf, 7)
+        reset_x(pdf)
+        pdf.set_font("DejaVu", "", 9)
+        pdf.set_text_color(*BLACK)
+        pdf.multi_cell(0, 4.5, f"{tech}  →  {guest}")
+        reset_x(pdf)
 
     h1(pdf, "Связь с концепцией заведения")
     body(
         pdf,
-        "Аура — переход от повседневности к внутреннему состоянию. Special-миксы — не просто вкусы, "
-        "а главы путешествия по зонам: нейтральный вход, зелёная мистика, сине-фиолетовый космос, "
-        "сектор солнечного света. Каждый микс держит одну эмоцию.",
+        "Аура — переход от повседневности к внутреннему состоянию. Special-миксы — главы "
+        "путешествия по зонам: нейтральный вход, зелёная мистика, сине-фиолетовый космос, "
+        "сектор солнечного света. Один микс — одна эмоция.",
     )
 
     h1(pdf, "Карта Special-меню")
@@ -210,7 +218,8 @@ def build():
         menu_it = next(x for x in mix["iterations"] if x["n"] == mix["menu"])
         h2(pdf, f"Рекомендуемый микс · Итерация {menu_it['n']}")
         body(pdf, menu_it["note"], size=9, color=MUTED)
-        body(pdf, recipe_line(menu_it["recipe"]), size=10)
+        body(pdf, f"Гостю: {guest_line(menu_it['recipe'])}", size=9)
+        body(pdf, f"Станция: {recipe_line(menu_it['recipe'])}", size=9)
         recipe_table(pdf, menu_it["recipe"])
         body(pdf, menu_it["story"], italic=True, size=9, color=MUTED)
 

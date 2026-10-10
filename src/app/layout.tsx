@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
-import { Unbounded, Manrope, Literata } from "next/font/google";
+import { Montserrat, Literata } from "next/font/google";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
-const display = Unbounded({
+const display = Montserrat({
   subsets: ["latin", "latin-ext", "cyrillic"],
   variable: "--font-display",
+  weight: ["500", "600", "700"],
 });
 
-const body = Manrope({
+const body = Montserrat({
   subsets: ["latin", "latin-ext", "cyrillic"],
   variable: "--font-body",
+  weight: ["300", "400", "500"],
 });
 
 const story = Literata({
@@ -19,9 +21,9 @@ const story = Literata({
 });
 
 export const metadata: Metadata = {
-  title: "Аура · Special меню",
+  title: "Аура · Special меню | HookahPlace Aura",
   description:
-    "Авторские кальянные миксы заведения Аура — Special-меню в жёлто-чёрно-оранжевой палитре.",
+    "Авторские кальянные миксы HookahPlace Aura — Special-меню в духе лаунджей Аура.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
