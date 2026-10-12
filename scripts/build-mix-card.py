@@ -8,7 +8,9 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
-OUT_PDF = Path(__file__).resolve().parents[1] / "docs" / "AURA_Kartochka_miksa.pdf"
+ROOT = Path(__file__).resolve().parents[1]
+OUT_PDF = ROOT / "docs" / "AURA_Kartochka_miksa.pdf"
+PUBLIC_DIR = ROOT / "public" / "files"
 ART_DIR = Path("/opt/cursor/artifacts")
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 FONT_B = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -194,8 +196,18 @@ def build():
     html_src = OUT_PDF.with_suffix(".html")
     if html_src.exists():
         (ART_DIR / html_src.name).write_bytes(html_src.read_bytes())
+
+    PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
+    (PUBLIC_DIR / OUT_PDF.name).write_bytes(OUT_PDF.read_bytes())
+    (PUBLIC_DIR / "AURA_Kartochka_miksa.png").write_bytes(preview.read_bytes())
+    if html_src.exists():
+        (PUBLIC_DIR / html_src.name).write_bytes(html_src.read_bytes())
+    # also keep a PNG next to docs for downloads outside the app
+    (OUT_PDF.parent / "AURA_Kartochka_miksa.png").write_bytes(preview.read_bytes())
+
     print(f"Wrote {preview}")
     print(f"Wrote {art_pdf}")
+    print(f"Wrote {PUBLIC_DIR / OUT_PDF.name}")
     print("page", doc[0].rect)
     print(text)
     doc.close()
