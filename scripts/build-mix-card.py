@@ -171,6 +171,12 @@ def hairline(c: canvas.Canvas, x1, y, x2, rgb=LINE, width=0.55) -> None:
     c.line(x1, y, x2, y)
 
 
+def write_band(c: canvas.Canvas, x, y, w, h=3.2 * mm) -> None:
+    """Light strip so black pen stays readable on dark print."""
+    c.setFillColorRGB(0.93, 0.90, 0.84)  # warm paper
+    c.roundRect(x, y - h * 0.35, w, h, 0.6 * mm, fill=1, stroke=0)
+
+
 def draw_wordmark(c: canvas.Canvas, cx, y, *, size=22) -> None:
     c.setFillColorRGB(*INK)
     # Prefer site black/display face
@@ -233,7 +239,7 @@ def draw_interior(c: canvas.Canvas, variant: str) -> None:
     c.setFillColorRGB(*INK)
     c.setFont("CoFoM", 6.5)
     c.drawCentredString(cx, H - 28 * mm, "ИМЯ МАСТЕРА")
-    hairline(c, left_x + 4 * mm, H - 32.5 * mm, left_r - 4 * mm, (0.9, 0.9, 0.9), 0.5)
+    write_band(c, left_x + 4 * mm, H - 33.5 * mm, left_w - 8 * mm, 3.4 * mm)
 
     qr = 26 * mm
     qr_x = cx - qr / 2
@@ -251,10 +257,10 @@ def draw_interior(c: canvas.Canvas, variant: str) -> None:
     base_y = 18 * mm
     c.setFillColorRGB(*INK)
     c.setFont("CoFoM", 6)
-    c.drawCentredString(left_x + col_w / 2, base_y + 5 * mm, "№ СТОЛА")
-    hairline(c, left_x + 1 * mm, base_y, left_x + col_w - 1 * mm, (0.9, 0.9, 0.9), 0.5)
-    c.drawCentredString(left_x + col_w + 5 * mm + col_w / 2, base_y + 5 * mm, "ВРЕМЯ")
-    hairline(c, left_x + col_w + 6 * mm, base_y, left_r - 1 * mm, (0.9, 0.9, 0.9), 0.5)
+    c.drawCentredString(left_x + col_w / 2, base_y + 5.5 * mm, "№ СТОЛА")
+    write_band(c, left_x + 1 * mm, base_y, col_w - 2 * mm, 3.2 * mm)
+    c.drawCentredString(left_x + col_w + 5 * mm + col_w / 2, base_y + 5.5 * mm, "ВРЕМЯ")
+    write_band(c, left_x + col_w + 6 * mm, base_y, col_w - 2 * mm, 3.2 * mm)
 
     c.setFillColorRGB(*MUTED)
     c.setFont("CoFo", 5.5)
@@ -274,7 +280,7 @@ def draw_interior(c: canvas.Canvas, variant: str) -> None:
         y = start_y - i * gap
         c.setFillColorRGB(*INK)
         c.circle(line_x + 1.2 * mm, y, 0.65 * mm, fill=1, stroke=0)
-        hairline(c, line_x + 4 * mm, y, line_x + line_w, (0.88, 0.88, 0.88), 0.55)
+        write_band(c, line_x + 4 * mm, y, line_w - 4 * mm, 3.4 * mm)
 
 
 def draw_reverse(c: canvas.Canvas, variant: str) -> None:
