@@ -162,34 +162,43 @@ def build():
     c.drawCentredString(rcx, 9.5 * mm, "HOOKAHPLACE")
 
     c.save()
-    print(f"Wrote {OUT_PDF}")
 
-    # Preview PNG + copy artifacts
+    # Normalize via a temp path — PyMuPDF cannot save onto an open source file
+    import tempfile
+
     import pymupdf as fitz
 
-    doc = fitz.open(OUT_PDF)
-    # Normalize / linearize for picky viewers
-    out_clean = OUT_PDF.with_name("AURA_Kartochka_miksa.pdf")
-    doc.save(
-        str(out_clean),
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+    src = fitz.open(OUT_PDF)
+    src.save(
+        str(tmp_path),
         garbage=4,
         deflate=True,
         clean=True,
-        pretty=False,
     )
-    # overwrite same path already written — reopen from bytes
-    doc.close()
+    src.close()
+    OUT_PDF.write_bytes(tmp_path.read_bytes())
+    tmp_path.unlink(missing_ok=True)
+    print(f"Wrote {OUT_PDF}")
 
     doc = fitz.open(OUT_PDF)
+    text = doc[0].get_text()
+    if "QR" in text.splitlines():
+        raise SystemExit("QR label leaked into card — aborting")
     pix = doc[0].get_pixmap(matrix=fitz.Matrix(3.2, 3.2), alpha=False)
     preview = ART_DIR / "AURA_Kartochka_miksa.png"
     pix.save(str(preview))
     art_pdf = ART_DIR / "AURA_Kartochka_miksa.pdf"
     art_pdf.write_bytes(OUT_PDF.read_bytes())
+    html_src = OUT_PDF.with_suffix(".html")
+    if html_src.exists():
+        (ART_DIR / html_src.name).write_bytes(html_src.read_bytes())
     print(f"Wrote {preview}")
     print(f"Wrote {art_pdf}")
     print("page", doc[0].rect)
-    print(doc[0].get_text())
+    print(text)
+    doc.close()
 
 
 if __name__ == "__main__":
