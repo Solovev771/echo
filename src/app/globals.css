@@ -48,44 +48,46 @@
 }
 
 :root {
-  --aura-black: #000000;
-  --aura-yellow: #e0a000;
-  --aura-orange: #e86a17;
-  --aura-ink: #f5efe3;
-  --aura-ink-soft: #b9a88a;
+  --aura-black: #0b0b0b;
+  --aura-paper: #111111;
+  --aura-white: #f5f5f5;
+  --aura-muted: #a8a8a8;
+  --aura-line: rgba(245, 245, 245, 0.35);
+  --aura-glow: #e86a17;
+  --aura-amber: #d4782a;
 
-  --background: #0a0a0a;
-  --foreground: #fff4d6;
-  --card: #121212;
-  --card-foreground: #fff4d6;
-  --popover: #121212;
-  --popover-foreground: #fff4d6;
-  --primary: #f5c518;
-  --primary-foreground: #0a0a0a;
-  --secondary: #1a1208;
-  --secondary-foreground: #fff4d6;
-  --muted: #1a1208;
-  --muted-foreground: #c9b48a;
-  --accent: #e86a17;
-  --accent-foreground: #0a0a0a;
+  --background: #0b0b0b;
+  --foreground: #f5f5f5;
+  --card: #111111;
+  --card-foreground: #f5f5f5;
+  --popover: #111111;
+  --popover-foreground: #f5f5f5;
+  --primary: #f5f5f5;
+  --primary-foreground: #0b0b0b;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #f5f5f5;
+  --muted: #1a1a1a;
+  --muted-foreground: #a8a8a8;
+  --accent: #d4782a;
+  --accent-foreground: #0b0b0b;
   --destructive: #b91c1c;
-  --border: rgb(245 197 24 / 25%);
-  --input: rgb(245 197 24 / 25%);
-  --ring: #f5c518;
-  --chart-1: #f5c518;
-  --chart-2: #e86a17;
-  --chart-3: #c9b48a;
-  --chart-4: #fff4d6;
+  --border: rgb(245 245 245 / 20%);
+  --input: rgb(245 245 245 / 20%);
+  --ring: #d4782a;
+  --chart-1: #f5f5f5;
+  --chart-2: #d4782a;
+  --chart-3: #a8a8a8;
+  --chart-4: #ffffff;
   --chart-5: #7a4a12;
-  --radius: 0.25rem;
-  --sidebar: #0a0a0a;
-  --sidebar-foreground: #fff4d6;
-  --sidebar-primary: #f5c518;
-  --sidebar-primary-foreground: #0a0a0a;
-  --sidebar-accent: #1a1208;
-  --sidebar-accent-foreground: #fff4d6;
-  --sidebar-border: rgb(245 197 24 / 25%);
-  --sidebar-ring: #f5c518;
+  --radius: 999px;
+  --sidebar: #0b0b0b;
+  --sidebar-foreground: #f5f5f5;
+  --sidebar-primary: #f5f5f5;
+  --sidebar-primary-foreground: #0b0b0b;
+  --sidebar-accent: #1a1a1a;
+  --sidebar-accent-foreground: #f5f5f5;
+  --sidebar-border: rgb(245 245 245 / 20%);
+  --sidebar-ring: #d4782a;
 }
 
 @layer base {
@@ -100,62 +102,42 @@
   body {
     @apply bg-background text-foreground antialiased;
     background-color: var(--aura-black);
+    color: var(--aura-white);
   }
 }
 
-.atmosphere {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(245, 197, 24, 0.18), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(232, 106, 23, 0.16), transparent 50%),
-    radial-gradient(ellipse 50% 35% at 50% 100%, rgba(245, 197, 24, 0.08), transparent 60%),
-    linear-gradient(180deg, #0a0a0a 0%, #120c05 45%, #0a0a0a 100%);
+.menu-stage {
+  position: relative;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background-color: var(--aura-black);
+  background-image:
+    radial-gradient(ellipse 70% 45% at 78% 100%, rgba(212, 120, 42, 0.38), transparent 58%),
+    radial-gradient(ellipse 40% 30% at 90% 85%, rgba(232, 106, 23, 0.18), transparent 55%),
+    linear-gradient(180deg, #0b0b0b 0%, #101010 55%, #0b0b0b 100%);
 }
 
-.atmosphere::after {
+.menu-stage::before {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.35;
-  background-image:
-    linear-gradient(rgba(245, 197, 24, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(245, 197, 24, 0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-}
-
-.sun-flare {
-  position: fixed;
-  top: -20%;
-  right: -10%;
-  width: min(55vw, 420px);
-  height: min(55vw, 420px);
   pointer-events: none;
-  z-index: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(245, 197, 24, 0.28), rgba(232, 106, 23, 0.08) 45%, transparent 70%);
-  animation: flare-drift 12s ease-in-out infinite alternate;
-  filter: blur(2px);
+  opacity: 0.22;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
 }
 
-@keyframes flare-drift {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: 0.75;
-  }
-  to {
-    transform: translate3d(-4%, 6%, 0) scale(1.08);
-    opacity: 1;
-  }
+.menu-hairline {
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, var(--aura-line), transparent);
+  background: var(--aura-line);
 }
 
-@keyframes brand-rise {
+@keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -163,85 +145,25 @@
   }
 }
 
-.brand-rise {
-  animation: brand-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+.rise-in {
+  animation: rise-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.brand-rise:nth-child(2) {
-  animation-delay: 0.12s;
+.menu-item-row {
+  animation: rise-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@keyframes section-fade {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.menu-item-row:hover .menu-item-name {
+  color: #ffffff;
 }
 
-.section-fade {
-  animation: section-fade 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes bar-grow {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-.recipe-bar {
-  animation: bar-grow 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes panel-in {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.mix-panel {
-  animation: panel-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.mix-chip {
-  animation: brand-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-/* Beat shadcn/base-ui default data-active:bg-background on menu tabs */
-.menu-tab[data-active] {
-  color: #000 !important;
-  background-color: var(--aura-yellow) !important;
-  border-color: var(--aura-yellow) !important;
-}
-
-.menu-tab.menu-tab-special[data-active] {
-  background-color: var(--aura-orange) !important;
-  border-color: var(--aura-orange) !important;
-}
-
-.menu-tab[data-active]::after {
-  opacity: 0 !important;
+.menu-item-row:hover .menu-hairline {
+  background: rgba(245, 245, 245, 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .atmosphere,
-  .sun-flare,
-  .brand-rise,
-  .section-fade,
-  .recipe-bar,
-  .mix-panel,
-  .mix-chip {
+  .rise-in,
+  .menu-item-row {
     animation: none !important;
   }
 }

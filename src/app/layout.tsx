@@ -6,7 +6,7 @@ import "./globals.css";
 const display = Montserrat({
   subsets: ["latin", "latin-ext", "cyrillic"],
   variable: "--font-display",
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const body = Montserrat({
@@ -18,12 +18,13 @@ const body = Montserrat({
 const story = Literata({
   subsets: ["latin", "latin-ext", "cyrillic"],
   variable: "--font-story",
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
-  title: "Аура · Special меню | HookahPlace Aura",
+  title: "Аура · Меню | HookahPlace Aura",
   description:
-    "Авторские кальянные миксы HookahPlace Aura — Special-меню в духе лаунджей Аура.",
+    "Меню HookahPlace Aura — классика зала и авторские Special-миксы.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

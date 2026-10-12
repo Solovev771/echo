@@ -4,181 +4,178 @@ import { useState } from "react";
 import { classicSections, specialMixes, type Mix } from "@/data/mixes";
 import { cn } from "@/lib/utils";
 
-function NoteLine({ notes }: { notes: Mix["notes"] }) {
+function MixCard({ mix, index }: { mix: Mix; index: number }) {
+  const notes = mix.notes.map((n) => n.name).join(", ");
+
   return (
-    <p className="mt-6 font-[family-name:var(--font-body)] text-sm leading-relaxed tracking-wide text-[var(--aura-ink-soft)]">
-      {notes.map((n) => n.name).join(" · ")}
-    </p>
+    <article
+      className="menu-item-row group"
+      style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
+    >
+      <div className="flex items-baseline justify-between gap-4">
+        <h3 className="menu-item-name font-[family-name:var(--font-display)] text-[1.35rem] font-medium tracking-[-0.01em] text-[var(--aura-white)] sm:text-[1.55rem]">
+          {mix.name}
+        </h3>
+        <span className="shrink-0 font-[family-name:var(--font-body)] text-[10px] uppercase tracking-[0.18em] text-[var(--aura-muted)]">
+          Special
+        </span>
+      </div>
+      <div className="menu-hairline mt-2.5" />
+      <p className="mt-2.5 font-[family-name:var(--font-story)] text-[0.95rem] italic leading-relaxed text-[var(--aura-white)]/90 sm:text-[1.02rem]">
+        {notes}
+      </p>
+      <p className="mt-2 font-[family-name:var(--font-story)] text-[0.88rem] italic leading-relaxed text-[var(--aura-muted)]">
+        {mix.story}
+      </p>
+    </article>
   );
 }
 
-function MixPanel({ mix }: { mix: Mix }) {
+function ClassicCard({
+  name,
+  detail,
+  index,
+}: {
+  name: string;
+  detail: string;
+  index: number;
+}) {
   return (
-    <article className="mix-panel relative overflow-hidden border border-[var(--aura-yellow)]/20 bg-black/50 p-5 sm:p-7">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(224,160,0,0.18),transparent_70%)]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(232,106,23,0.14),transparent_70%)]"
-      />
-
-      <p className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.28em] text-[var(--aura-orange)]">
-        {mix.zone}
-      </p>
-      <h3 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold uppercase tracking-[0.04em] text-[var(--aura-yellow)] sm:text-4xl">
-        {mix.name}
+    <article
+      className="menu-item-row"
+      style={{ animationDelay: `${index * 45}ms` }}
+    >
+      <h3 className="menu-item-name font-[family-name:var(--font-display)] text-[1.35rem] font-medium tracking-[-0.01em] text-[var(--aura-white)] sm:text-[1.55rem]">
+        {name}
       </h3>
-      <p className="mt-2 font-[family-name:var(--font-body)] text-sm text-[var(--aura-ink-soft)]">
-        {mix.character}
+      <div className="menu-hairline mt-2.5" />
+      <p className="mt-2.5 font-[family-name:var(--font-story)] text-[0.95rem] italic leading-relaxed text-[var(--aura-white)]/90">
+        {detail}
       </p>
-      <p className="mt-5 max-w-2xl font-[family-name:var(--font-story)] text-base leading-relaxed text-[var(--aura-ink)] sm:text-lg">
-        {mix.story}
-      </p>
-      <NoteLine notes={mix.notes} />
     </article>
   );
 }
 
 export function MenuShell() {
   const [tab, setTab] = useState<"menu" | "special">("special");
-  const [selectedId, setSelectedId] = useState(specialMixes[0]?.id ?? "");
-  const selected =
-    specialMixes.find((m) => m.id === selectedId) ?? specialMixes[0];
 
   return (
-    <div className="relative min-h-dvh overflow-x-hidden bg-[var(--aura-black)] text-[var(--aura-ink)]">
-      <div aria-hidden className="atmosphere" />
-      <div aria-hidden className="sun-flare" />
-
-      <header className="relative z-10 mx-auto flex max-w-6xl items-end justify-between gap-4 px-5 pb-2 pt-8 sm:px-8 sm:pt-10">
-        <div className="brand-rise">
-          <p className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.35em] text-[var(--aura-orange)]">
-            HookahPlace · Aura
+    <div className="menu-stage text-[var(--aura-white)]">
+      <header className="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-5 px-5 pb-6 pt-7 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-3 sm:px-10 sm:pt-9">
+        <div className="rise-in order-1 text-center sm:order-2">
+          <p className="font-[family-name:var(--font-display)] text-[2.2rem] font-semibold lowercase leading-none tracking-tight text-[var(--aura-white)] sm:text-[2.5rem]">
+            aura
           </p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-5xl font-semibold uppercase leading-none tracking-[0.08em] text-[var(--aura-yellow)] sm:text-7xl">
-            Аура
-          </h1>
+          <p className="mt-1.5 font-[family-name:var(--font-body)] text-[9px] uppercase tracking-[0.42em] text-[var(--aura-white)]/75 sm:text-[10px]">
+            HookahPlace
+          </p>
         </div>
-        <p className="brand-rise max-w-[14rem] text-right font-[family-name:var(--font-body)] text-[11px] leading-snug text-[var(--aura-ink-soft)] sm:max-w-xs sm:text-xs">
-          Здесь каждая деталь помогает замедлиться и насладиться моментом.
-        </p>
-      </header>
 
-      <main className="relative z-10 mx-auto max-w-6xl px-5 pb-16 pt-8 sm:px-8">
-        <div
-          role="tablist"
-          aria-label="Разделы меню"
-          className="flex flex-wrap gap-2"
-        >
+        <nav className="order-2 flex flex-wrap items-center justify-center gap-5 sm:order-1 sm:justify-start sm:gap-7">
+          <a
+            href="https://hpaura.ru/"
+            className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.2em] text-[var(--aura-white)]/85 transition-opacity hover:opacity-100 sm:text-xs"
+          >
+            Галерея
+          </a>
           <button
             type="button"
-            role="tab"
-            aria-selected={tab === "menu"}
             onClick={() => setTab("menu")}
             className={cn(
-              "rounded-none border px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] transition-colors",
+              "font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.2em] transition-opacity sm:text-xs",
               tab === "menu"
-                ? "border-[var(--aura-yellow)] bg-[var(--aura-yellow)] text-black"
-                : "border-[var(--aura-ink-soft)]/30 bg-transparent text-[var(--aura-ink-soft)]",
+                ? "text-[var(--aura-white)]"
+                : "text-[var(--aura-white)]/55 hover:text-[var(--aura-white)]",
             )}
           >
             Меню
           </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "special"}
-            onClick={() => setTab("special")}
-            className={cn(
-              "rounded-none border px-5 py-2.5 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] transition-colors",
-              tab === "special"
-                ? "border-[var(--aura-orange)] bg-[var(--aura-orange)] text-black"
-                : "border-[var(--aura-orange)]/50 bg-transparent text-[var(--aura-orange)]",
-            )}
+        </nav>
+
+        <div className="order-3 flex flex-wrap items-center justify-center gap-3 sm:justify-end sm:gap-5">
+          <a
+            href="https://hpaura.ru/"
+            className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.2em] text-[var(--aura-white)]/85 transition-opacity hover:opacity-100 sm:text-xs"
           >
-            Special
-          </button>
+            Контакты
+          </a>
+          <a
+            href="https://hpaura.ru/#zeroreserve"
+            className="rounded-full border border-[var(--aura-white)]/70 px-4 py-1.5 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.18em] text-[var(--aura-white)] transition-colors hover:bg-[var(--aura-white)] hover:text-black sm:text-xs"
+          >
+            Бронь
+          </a>
+        </div>
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-6xl px-5 pb-20 pt-4 sm:px-10 sm:pt-8">
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-4 rise-in">
+          <div>
+            <p className="font-[family-name:var(--font-body)] text-[10px] uppercase tracking-[0.28em] text-[var(--aura-muted)]">
+              {tab === "special" ? "Авторская линейка" : "Зал"}
+            </p>
+            <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-medium tracking-tight text-[var(--aura-white)] sm:text-3xl">
+              {tab === "special" ? "Special" : "Меню"}
+            </h2>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setTab("menu")}
+              className={cn(
+                "rounded-full border px-4 py-1.5 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.16em] transition-colors",
+                tab === "menu"
+                  ? "border-[var(--aura-white)] bg-[var(--aura-white)] text-black"
+                  : "border-[var(--aura-white)]/35 text-[var(--aura-white)]/70 hover:border-[var(--aura-white)]/70",
+              )}
+            >
+              Меню
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("special")}
+              className={cn(
+                "rounded-full border px-4 py-1.5 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.16em] transition-colors",
+                tab === "special"
+                  ? "border-[var(--aura-white)] bg-[var(--aura-white)] text-black"
+                  : "border-[var(--aura-white)]/35 text-[var(--aura-white)]/70 hover:border-[var(--aura-white)]/70",
+              )}
+            >
+              Special
+            </button>
+          </div>
         </div>
 
-        {tab === "menu" ? (
-          <div className="mt-8">
-            <section className="section-fade max-w-2xl">
-              <h2 className="font-[family-name:var(--font-display)] text-3xl uppercase tracking-[0.06em] text-[var(--aura-yellow)]">
-                Основное меню
-              </h2>
-              <p className="mt-3 font-[family-name:var(--font-story)] text-base leading-relaxed text-[var(--aura-ink-soft)]">
-                Классика и зоны зала. Авторские миксы — во вкладке Special.
-              </p>
-            </section>
-
-            <div className="mt-10 grid gap-10 md:grid-cols-2">
-              {classicSections.map((section) => (
-                <section key={section.id} className="section-fade">
-                  <h3 className="font-[family-name:var(--font-display)] text-xl uppercase tracking-[0.08em] text-[var(--aura-orange)]">
-                    {section.title}
-                  </h3>
-                  <p className="mt-2 font-[family-name:var(--font-body)] text-sm text-[var(--aura-ink-soft)]">
-                    {section.note}
-                  </p>
-                  <ul className="mt-6 space-y-4 border-t border-[var(--aura-yellow)]/15 pt-5">
-                    {section.items.map((item) => (
-                      <li key={item.name}>
-                        <p className="font-[family-name:var(--font-display)] text-lg uppercase tracking-[0.04em] text-[var(--aura-yellow)]">
-                          {item.name}
-                        </p>
-                        <p className="mt-1 font-[family-name:var(--font-body)] text-sm text-[var(--aura-ink-soft)]">
-                          {item.detail}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-            </div>
+        {tab === "special" ? (
+          <div className="grid gap-x-14 gap-y-10 md:grid-cols-2">
+            {specialMixes.map((mix, index) => (
+              <MixCard key={mix.id} mix={mix} index={index} />
+            ))}
           </div>
         ) : (
-          <div className="mt-8">
-            <section className="section-fade max-w-2xl">
-              <p className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.3em] text-[var(--aura-orange)]">
-                Special
-              </p>
-              <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl uppercase tracking-[0.06em] text-[var(--aura-yellow)] sm:text-4xl">
-                Авторские миксы
-              </h2>
-              <p className="mt-3 font-[family-name:var(--font-story)] text-base leading-relaxed text-[var(--aura-ink-soft)]">
-                Девять миксов. Один — под настроение. Без процентов и лишнего шума.
-              </p>
-            </section>
-
-            <div className="mt-8 flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {specialMixes.map((mix, index) => {
-                const active = mix.id === selected?.id;
-                return (
-                  <button
-                    key={mix.id}
-                    type="button"
-                    onClick={() => setSelectedId(mix.id)}
-                    className={cn(
-                      "mix-chip shrink-0 border px-4 py-2 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.16em] transition-colors duration-300",
-                      active
-                        ? "border-[var(--aura-yellow)] bg-[var(--aura-yellow)] text-black"
-                        : "border-[var(--aura-yellow)]/25 bg-black/35 text-[var(--aura-yellow)] hover:border-[var(--aura-orange)] hover:text-[var(--aura-orange)]",
-                    )}
-                    style={{ animationDelay: `${index * 40}ms` }}
-                  >
-                    {mix.name}
-                  </button>
-                );
-              })}
-            </div>
-
-            {selected ? (
-              <div className="mt-6">
-                <MixPanel mix={selected} key={selected.id} />
-              </div>
-            ) : null}
+          <div className="grid gap-x-14 gap-y-12 md:grid-cols-2">
+            {classicSections.map((section, sIndex) => (
+              <section key={section.id} className="space-y-8">
+                <div className="rise-in">
+                  <h3 className="font-[family-name:var(--font-display)] text-lg font-medium tracking-tight text-[var(--aura-white)]">
+                    {section.title}
+                  </h3>
+                  <p className="mt-2 font-[family-name:var(--font-story)] text-sm italic text-[var(--aura-muted)]">
+                    {section.note}
+                  </p>
+                </div>
+                <div className="space-y-8">
+                  {section.items.map((item, i) => (
+                    <ClassicCard
+                      key={item.name}
+                      name={item.name}
+                      detail={item.detail}
+                      index={sIndex * 4 + i}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
           </div>
         )}
       </main>
