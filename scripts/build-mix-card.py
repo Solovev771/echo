@@ -130,18 +130,16 @@ def soft_mist(c: canvas.Canvas, x, y, rx, ry, color, strength=0.22, steps=36) ->
 def paint_atmosphere(c: canvas.Canvas, variant: str, *, reverse: bool = False) -> None:
     fill_bg(c)
     if variant == "site" or reverse:
-        # Primary site look: left dark → right amber (hpaura.ru hero)
-        steps = 80
+        # Primary site look: left dark → right amber (hpaura.ru hero), no rings
+        steps = 90
         for i in range(steps):
             t = i / (steps - 1)
-            ease = t ** 1.15
-            r = BLACK[0] * (1 - ease) + GLOW[0] * 0.78 * ease
-            g = BLACK[1] * (1 - ease) + GLOW[1] * 0.42 * ease
-            b = BLACK[2] * (1 - ease) + GLOW[2] * 0.12 * ease
+            ease = t ** 1.05
+            r = BLACK[0] * (1 - ease) + GLOW[0] * 0.85 * ease
+            g = BLACK[1] * (1 - ease) + GLOW[1] * 0.48 * ease
+            b = BLACK[2] * (1 - ease) + 0.06 * ease
             c.setFillColorRGB(r, g, b)
             c.rect(W * t, 0, W / steps + 0.6, H, fill=1, stroke=0)
-        # one soft bloom on the warm side — no stacked rings
-        soft_mist(c, W * 0.88, H * 0.5, 48 * mm, 55 * mm, GLOW, 0.18, 42)
         return
 
     if variant == "mist":
