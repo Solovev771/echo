@@ -171,35 +171,46 @@ def hairline(c: canvas.Canvas, x1, y, x2, rgb=LINE, width=0.55) -> None:
     c.line(x1, y, x2, y)
 
 
-def write_band(c: canvas.Canvas, x, y, w, h=4.2 * mm) -> None:
-    """Soft mist strip — readable for pen, no hard edges."""
-    steps = 14
+def write_band(c: canvas.Canvas, x, y, w, h=5.5 * mm) -> None:
+    """Soft mist for writing — low contrast, feathered, no hard outline."""
+    # vertical + horizontal feather via nested translucent ellipses/rects
     c.saveState()
-    for i in range(steps):
-        t = i / (steps - 1)  # 0 center → 1 edge
-        # gaussian-ish falloff
-        fall = 1 - t
-        a = 0.22 * (fall ** 1.8)
-        if a < 0.02:
-            continue
-        # band half expands with step
-        half = (h * 0.5) * (0.35 + 0.65 * t)
+    layers = (
+        (1.00, 0.06),
+        (0.82, 0.08),
+        (0.64, 0.10),
+        (0.46, 0.12),
+        (0.30, 0.10),
+        (0.18, 0.07),
+    )
+    for scale, a in layers:
+        half_h = (h * 0.5) * scale
+        inset = (1 - scale) * 4 * mm
         try:
-            c.setFillColorRGB(0.94, 0.91, 0.86, alpha=a)
+            c.setFillColorRGB(0.92, 0.88, 0.82, alpha=a)
         except TypeError:
             c.setFillAlpha(a)
-            c.setFillColorRGB(0.94, 0.91, 0.86)
-        c.rect(x, y - half, w, half * 2, fill=1, stroke=0)
+            c.setFillColorRGB(0.92, 0.88, 0.82)
+        # rounded soft body
+        c.roundRect(
+            x + inset,
+            y - half_h,
+            max(w - 2 * inset, 2 * mm),
+            half_h * 2,
+            half_h * 0.9,
+            fill=1,
+            stroke=0,
+        )
     c.restoreState()
-    # quiet guide hairline in the middle (very soft)
+    # barely-there guide
     c.saveState()
     try:
-        c.setStrokeColorRGB(0.88, 0.84, 0.78, alpha=0.35)
+        c.setStrokeColorRGB(0.9, 0.86, 0.8, alpha=0.22)
     except TypeError:
-        c.setStrokeAlpha(0.35)
-        c.setStrokeColorRGB(0.88, 0.84, 0.78)
-    c.setLineWidth(0.4)
-    c.line(x + 1 * mm, y, x + w - 1 * mm, y)
+        c.setStrokeAlpha(0.22)
+        c.setStrokeColorRGB(0.9, 0.86, 0.8)
+    c.setLineWidth(0.35)
+    c.line(x + 3 * mm, y, x + w - 3 * mm, y)
     c.restoreState()
 
 
