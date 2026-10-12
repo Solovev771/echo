@@ -171,10 +171,12 @@ def hairline(c: canvas.Canvas, x1, y, x2, rgb=LINE, width=0.55) -> None:
     c.line(x1, y, x2, y)
 
 
-def write_band(c: canvas.Canvas, x, y, w, h=3.2 * mm) -> None:
+def write_band(c: canvas.Canvas, x, y, w, h=5.0 * mm) -> None:
     """Light strip so black pen stays readable on dark print."""
-    c.setFillColorRGB(0.93, 0.90, 0.84)  # warm paper
-    c.roundRect(x, y - h * 0.35, w, h, 0.6 * mm, fill=1, stroke=0)
+    c.setFillColorRGB(0.96, 0.94, 0.90)  # near-white warm paper
+    c.setStrokeColorRGB(0.82, 0.78, 0.70)
+    c.setLineWidth(0.35)
+    c.roundRect(x, y - h * 0.45, w, h, 0.8 * mm, fill=1, stroke=1)
 
 
 def draw_wordmark(c: canvas.Canvas, cx, y, *, size=22) -> None:
