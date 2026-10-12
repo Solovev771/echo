@@ -51,20 +51,15 @@ LOGO_REF = _logo_cut if _logo_cut.exists() else _logo_raw
 
 
 def register_fonts() -> None:
+    # Exact faces from hpaura.ru @font-face (Tilda "Jaipur" family):
+    # 100=CoFoSans Regular, 300=CoFoRobert Italic, 400=jaipur,
+    # 500=CoFoSans Medium, 900=CoFoSans Black
     mapping = {
-        # Site faces (from hpaura.ru / Tilda)
         "Jaipur": "jaipur.ttf",
         "CoFo": "CoFoSans-Regular.ttf",
         "CoFoM": "CoFoSans-Medium.ttf",
         "CoFoB": "CoFoSans-Black.ttf",
         "RobertI": "CoFoRobert-RegularIt.ttf",
-        # Fallbacks still used lightly
-        "Mont": "Montserrat-Regular.ttf",
-        "MontM": "Montserrat-Medium.ttf",
-        "MontSB": "Montserrat-SemiBold.ttf",
-        "MontB": "Montserrat-Bold.ttf",
-        "MontL": "Montserrat-Light.ttf",
-        "LitI": "Literata-Italic.ttf",
     }
     for name, file in mapping.items():
         path = FONTS / file
@@ -214,14 +209,43 @@ def write_band(c: canvas.Canvas, x, y, w, h=5.5 * mm) -> None:
     c.restoreState()
 
 
+def draw_tracked(
+    c: canvas.Canvas,
+    text: str,
+    cx: float,
+    y: float,
+    font: str,
+    size: float,
+    tracking: float,
+    *,
+    rgb=INK,
+) -> None:
+    """Centre-aligned text with letter-spacing (site uses ~1px tracking on caps)."""
+    c.setFont(font, size)
+    c.setFillColorRGB(*rgb)
+    widths = [c.stringWidth(ch, font, size) for ch in text]
+    total = sum(widths) + tracking * max(len(text) - 1, 0)
+    x = cx - total / 2
+    for ch, w in zip(text, widths):
+        c.drawString(x, y, ch)
+        x += w + tracking
+
+
 def draw_wordmark(c: canvas.Canvas, cx, y, *, size=22) -> None:
+    # Site logo geometry ≈ CoFo Sans Black + tracked CoFo Sans Regular
     c.setFillColorRGB(*INK)
-    # Prefer site black/display face
     c.setFont("CoFoB", size)
     c.drawCentredString(cx, y, "aura")
-    c.setFillColorRGB(*INK)
-    c.setFont("CoFo", 5.5)
-    c.drawCentredString(cx, y - 4.0 * mm, "HOOKAHPLACE")
+    draw_tracked(
+        c,
+        "HOOKAHPLACE",
+        cx,
+        y - 4.2 * mm,
+        "CoFo",
+        5.2,
+        1.15,
+        rgb=INK,
+    )
 
 
 def draw_logo_image(c: canvas.Canvas, cx, cy, max_w, max_h) -> bool:
@@ -246,13 +270,12 @@ def draw_logo_image(c: canvas.Canvas, cx, cy, max_w, max_h) -> bool:
 
 
 def draw_site_tagline(c: canvas.Canvas, cx: float, y_top: float) -> None:
-    """Match site hero: sans caps + italic serif caps (white)."""
+    """Site hero type: CoFoSans Regular caps + CoFoRobert Italic caps."""
+    draw_tracked(c, "ЗДЕСЬ КАЖДАЯ ДЕТАЛЬ", cx, y_top, "CoFo", 6.8, 0.55, rgb=INK)
     c.setFillColorRGB(*INK)
-    c.setFont("CoFoM", 7)
-    c.drawCentredString(cx, y_top, "ЗДЕСЬ КАЖДАЯ ДЕТАЛЬ")
-    c.setFont("RobertI", 7)
-    c.drawCentredString(cx, y_top - 4.2 * mm, "ПОМОГАЕТ ЗАМЕДЛИТЬСЯ")
-    c.drawCentredString(cx, y_top - 8.4 * mm, "И НАСЛАДИТЬСЯ МОМЕНТОМ")
+    c.setFont("RobertI", 7.2)
+    c.drawCentredString(cx, y_top - 4.4 * mm, "ПОМОГАЕТ ЗАМЕДЛИТЬСЯ")
+    c.drawCentredString(cx, y_top - 8.8 * mm, "И НАСЛАДИТЬСЯ МОМЕНТОМ")
 
 
 def draw_interior(c: canvas.Canvas, variant: str) -> None:
@@ -271,41 +294,48 @@ def draw_interior(c: canvas.Canvas, variant: str) -> None:
     rcx = right_x + right_w / 2
 
     # ---- LEFT ----
-    draw_wordmark(c, cx, H - 14 * mm, size=20)
+    # Same mark as site: logo image when available
+    if not draw_logo_image(c, cx, H - 16 * mm, left_w * 0.88, 16 * mm):
+        draw_wordmark(c, cx, H - 14 * mm, size=20)
 
-    c.setFillColorRGB(*INK)
-    c.setFont("CoFoM", 6.5)
-    c.drawCentredString(cx, H - 28 * mm, "ИМЯ МАСТЕРА")
-    write_band(c, left_x + 4 * mm, H - 33.5 * mm, left_w - 8 * mm, 3.4 * mm)
+    draw_tracked(c, "ИМЯ МАСТЕРА", cx, H - 30 * mm, "CoFo", 6.2, 0.7, rgb=INK)
+    write_band(c, left_x + 4 * mm, H - 35 * mm, left_w - 8 * mm, 3.4 * mm)
 
     qr = 26 * mm
     qr_x = cx - qr / 2
-    qr_y = H - 66 * mm
+    qr_y = H - 68 * mm
     c.setFillColorRGB(0.05, 0.05, 0.05)
     c.setStrokeColorRGB(*INK)
     c.setLineWidth(0.7)
     c.roundRect(qr_x, qr_y, qr, qr, 1.2 * mm, fill=1, stroke=1)
 
     c.setFillColorRGB(*MUTED)
-    c.setFont("RobertI", 6.5)
+    c.setFont("RobertI", 6.4)
     c.drawCentredString(cx, qr_y - 5.5 * mm, "Если понравился кальян — можете оставить чаевые")
 
     col_w = (left_w - 5 * mm) / 2
     base_y = 18 * mm
-    c.setFillColorRGB(*INK)
-    c.setFont("CoFoM", 6)
-    c.drawCentredString(left_x + col_w / 2, base_y + 5.5 * mm, "№ СТОЛА")
+    draw_tracked(
+        c, "№ СТОЛА", left_x + col_w / 2, base_y + 5.5 * mm, "CoFo", 5.8, 0.55, rgb=INK
+    )
     write_band(c, left_x + 1 * mm, base_y, col_w - 2 * mm, 3.2 * mm)
-    c.drawCentredString(left_x + col_w + 5 * mm + col_w / 2, base_y + 5.5 * mm, "ВРЕМЯ")
+    draw_tracked(
+        c,
+        "ВРЕМЯ",
+        left_x + col_w + 5 * mm + col_w / 2,
+        base_y + 5.5 * mm,
+        "CoFo",
+        5.8,
+        0.55,
+        rgb=INK,
+    )
     write_band(c, left_x + col_w + 6 * mm, base_y, col_w - 2 * mm, 3.2 * mm)
 
-    c.setFillColorRGB(*MUTED)
-    c.setFont("CoFo", 5.5)
-    c.drawCentredString(cx, 8 * mm, SITE)
+    draw_tracked(c, SITE.upper(), cx, 8 * mm, "CoFo", 5.2, 0.8, rgb=MUTED)
 
     # ---- RIGHT ----
     c.setFillColorRGB(*INK)
-    c.setFont("CoFoB", 20)
+    c.setFont("CoFoB", 19)
     c.drawCentredString(rcx, H - 16 * mm, "Mix")
     hairline(c, right_x + 10 * mm, H - 21 * mm, right_r - 10 * mm, (0.85, 0.85, 0.85), 0.4)
 
@@ -334,46 +364,29 @@ def draw_reverse(c: canvas.Canvas, variant: str) -> None:
         draw_wordmark(c, left_cx, H * 0.62, size=32)
 
     draw_site_tagline(c, left_cx, H * 0.40)
-    c.setFillColorRGB(*INK)
-    c.setFont("CoFoM", 8)
-    c.drawCentredString(left_cx, H * 0.16, SITE)
+    draw_tracked(c, SITE.upper(), left_cx, H * 0.16, "CoFo", 6.5, 0.9, rgb=INK)
 
-    # Right — both venues
+    # Right — both venues (same type roles as site location cards)
+    def venue_block(cx: float, y: float, addr: str, meta: str, phone: str) -> None:
+        c.setFillColorRGB(*INK)
+        c.setFont("CoFoB", 13)
+        c.drawCentredString(cx, y, "aura")
+        draw_tracked(c, "HOOKAHPLACE", cx, y - 4.2 * mm, "CoFo", 5.0, 1.1, rgb=INK)
+        c.setFont("CoFoM", 8)
+        c.drawCentredString(cx, y - 10.5 * mm, addr)
+        c.setFillColorRGB(*MUTED)
+        c.setFont("CoFo", 6.2)
+        c.drawCentredString(cx, y - 14.5 * mm, meta)
+        c.setFillColorRGB(*INK)
+        c.setFont("CoFoM", 7.4)
+        c.drawCentredString(cx, y - 19.5 * mm, phone)
+
     y = H * 0.78
-    c.setFillColorRGB(*INK)
-    c.setFont("CoFoB", 12)
-    c.drawCentredString(right_cx, y, AURA_NAME)
-    c.setFont("CoFo", 5.5)
-    c.drawCentredString(right_cx, y - 4 * mm, "HOOKAHPLACE")
-    c.setFont("CoFoM", 8)
-    c.drawCentredString(right_cx, y - 10 * mm, AURA_ADDR)
-    c.setFillColorRGB(*MUTED)
-    c.setFont("CoFo", 6.5)
-    c.drawCentredString(right_cx, y - 14 * mm, AURA_META)
-    c.setFillColorRGB(*INK)
-    c.setFont("CoFoM", 7.5)
-    c.drawCentredString(right_cx, y - 19 * mm, AURA_PHONE)
+    venue_block(right_cx, y, AURA_ADDR, AURA_META, AURA_PHONE)
+    hairline(c, right_cx - 20 * mm, y - 24.5 * mm, right_cx + 20 * mm, (0.85, 0.85, 0.85), 0.4)
+    venue_block(right_cx, y - 33 * mm, KOR_ADDR, KOR_META, KOR_PHONE)
 
-    hairline(c, right_cx - 20 * mm, y - 24 * mm, right_cx + 20 * mm, (0.85, 0.85, 0.85), 0.4)
-
-    y2 = y - 32 * mm
-    c.setFillColorRGB(*INK)
-    c.setFont("CoFoB", 12)
-    c.drawCentredString(right_cx, y2, KOR_NAME)
-    c.setFont("CoFo", 5.5)
-    c.drawCentredString(right_cx, y2 - 4 * mm, "HOOKAHPLACE")
-    c.setFont("CoFoM", 8)
-    c.drawCentredString(right_cx, y2 - 10 * mm, KOR_ADDR)
-    c.setFillColorRGB(*MUTED)
-    c.setFont("CoFo", 6.5)
-    c.drawCentredString(right_cx, y2 - 14 * mm, KOR_META)
-    c.setFillColorRGB(*INK)
-    c.setFont("CoFoM", 7.5)
-    c.drawCentredString(right_cx, y2 - 19 * mm, KOR_PHONE)
-
-    c.setFillColorRGB(*MUTED)
-    c.setFont("CoFo", 6.5)
-    c.drawCentredString(right_cx, 12 * mm, TELEGRAM)
+    draw_tracked(c, TELEGRAM, right_cx, 12 * mm, "CoFo", 6.0, 0.5, rgb=MUTED)
 
 
 def write_pdf(path: Path, variant: str) -> None:
