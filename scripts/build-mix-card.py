@@ -248,9 +248,10 @@ def draw_wordmark(c: canvas.Canvas, cx, y, *, size=22) -> None:
     )
 
 
-def draw_logo_image(c: canvas.Canvas, cx, cy, max_w, max_h) -> bool:
+def draw_logo_image(c: canvas.Canvas, cx, cy, max_w, max_h) -> float | None:
+    """Draw site aura mark (blob). Returns rendered height, or None."""
     if not LOGO_REF.exists():
-        return False
+        return None
     from PIL import Image as PILImage
 
     with PILImage.open(LOGO_REF) as im:
@@ -266,7 +267,25 @@ def draw_logo_image(c: canvas.Canvas, cx, cy, max_w, max_h) -> bool:
         mask="auto",
         preserveAspectRatio=True,
     )
-    return True
+    return h
+
+
+def draw_brand_block(c: canvas.Canvas, cx: float, cy: float, *, mark_h: float, hp_size: float = 5.2) -> None:
+    """Site brand stack: logo mark + tracked HOOKAHPLACE in CoFo Sans."""
+    h = draw_logo_image(c, cx, cy + 1.2 * mm, mark_h * 2.6, mark_h)
+    if h is None:
+        draw_wordmark(c, cx, cy + 2 * mm, size=mark_h * 1.5)
+        return
+    draw_tracked(
+        c,
+        "HOOKAHPLACE",
+        cx,
+        cy - h * 0.55 - 1.8 * mm,
+        "CoFo",
+        hp_size,
+        1.15,
+        rgb=INK,
+    )
 
 
 def draw_site_tagline(c: canvas.Canvas, cx: float, y_top: float) -> None:
@@ -294,16 +313,14 @@ def draw_interior(c: canvas.Canvas, variant: str) -> None:
     rcx = right_x + right_w / 2
 
     # ---- LEFT ----
-    # Same mark as site: logo image when available
-    if not draw_logo_image(c, cx, H - 16 * mm, left_w * 0.88, 16 * mm):
-        draw_wordmark(c, cx, H - 14 * mm, size=20)
+    draw_brand_block(c, cx, H - 17 * mm, mark_h=14 * mm, hp_size=5.0)
 
-    draw_tracked(c, "ИМЯ МАСТЕРА", cx, H - 30 * mm, "CoFo", 6.2, 0.7, rgb=INK)
-    write_band(c, left_x + 4 * mm, H - 35 * mm, left_w - 8 * mm, 3.4 * mm)
+    draw_tracked(c, "ИМЯ МАСТЕРА", cx, H - 32 * mm, "CoFo", 6.2, 0.7, rgb=INK)
+    write_band(c, left_x + 4 * mm, H - 37 * mm, left_w - 8 * mm, 3.4 * mm)
 
-    qr = 26 * mm
+    qr = 25 * mm
     qr_x = cx - qr / 2
-    qr_y = H - 68 * mm
+    qr_y = H - 69 * mm
     c.setFillColorRGB(0.05, 0.05, 0.05)
     c.setStrokeColorRGB(*INK)
     c.setLineWidth(0.7)
@@ -360,10 +377,8 @@ def draw_reverse(c: canvas.Canvas, variant: str) -> None:
     panel_w = mid - FOLD_GAP / 2 - 9 * mm
 
     # Left — logo + site tagline
-    if not draw_logo_image(c, left_cx, H * 0.62, min(68 * mm, panel_w * 0.95), 28 * mm):
-        draw_wordmark(c, left_cx, H * 0.62, size=32)
-
-    draw_site_tagline(c, left_cx, H * 0.40)
+    draw_brand_block(c, left_cx, H * 0.62, mark_h=22 * mm, hp_size=6.0)
+    draw_site_tagline(c, left_cx, H * 0.38)
     draw_tracked(c, SITE.upper(), left_cx, H * 0.16, "CoFo", 6.5, 0.9, rgb=INK)
 
     # Right — both venues (same type roles as site location cards)
