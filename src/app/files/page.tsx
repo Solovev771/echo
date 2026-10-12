@@ -44,24 +44,23 @@ export default function FilesPage() {
                 Все варианты
               </Link>
               <a
-                href="/files/AURA_Kartochka_mist.pdf"
+                href="/files/AURA_Kartochka_site.pdf"
                 className="underline-offset-4 hover:underline"
               >
-                PDF Mist
+                PDF Site
               </a>
             </div>
           </div>
           <p className="text-sm text-[#a8a8a8]">
-            Разворот + оборот. Сгиб по центру. QR пустой. Смотрите все варианты на
-            странице карточки.
+            Основной вариант в стиле hpaura.ru. Сгиб по центру, QR пустой.
           </p>
           <img
-            src="/files/AURA_Kartochka_mist_inside.png"
+            src="/files/AURA_Kartochka_site_inside.png"
             alt="Карточка микса — разворот"
             className="w-full border border-amber-900/40"
           />
           <img
-            src="/files/AURA_Kartochka_mist_outside.png"
+            src="/files/AURA_Kartochka_site_outside.png"
             alt="Карточка микса — оборот"
             className="w-full border border-amber-900/40"
           />

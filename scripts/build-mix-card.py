@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Aura guest mix card — quiet variants, fold gutter, reverse branding."""
+"""Aura guest mix card — style locked to hpaura.ru (Jaipur / CoFo / site gradient)."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pymupdf as fitz
 from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
@@ -17,22 +18,23 @@ DOCS = ROOT / "docs"
 PUBLIC = ROOT / "public" / "files"
 ART = Path("/opt/cursor/artifacts")
 FONTS = ROOT / "assets" / "fonts"
+BRAND = ROOT / "assets" / "brand"
 
 W, H = 170 * mm, 108 * mm
-FOLD_GAP = 8 * mm  # clear zone for folding
+FOLD_GAP = 8 * mm
 
-INK = (0.93, 0.91, 0.88)
-MUTED = (0.62, 0.58, 0.52)
-AMBER = (0.78, 0.48, 0.22)
-AMBER_DIM = (0.55, 0.38, 0.22)
-LINE = (0.78, 0.68, 0.50)
-RULE = (0.42, 0.34, 0.26)
+# Site palette (menu + hpaura.ru refs)
+BLACK = (0.043, 0.043, 0.043)  # #0b0b0b
+INK = (0.961, 0.961, 0.961)  # #f5f5f5
+MUTED = (0.659, 0.659, 0.659)  # #a8a8a8
+AMBER = (0.831, 0.471, 0.165)  # #d4782a
+GLOW = (0.910, 0.416, 0.090)  # #e86a17
+LINE = (0.85, 0.72, 0.52)
+RULE = (0.35, 0.28, 0.22)
 
 SITE = "hpaura.ru"
 TELEGRAM = "@hp_aura"
-TAGLINE = "Здесь каждая деталь помогает замедлиться"
 
-# Both venues from hpaura.ru
 AURA_NAME = "aura"
 AURA_ADDR = "Широкая, 29"
 AURA_META = "м. Медведково · 10 минут"
@@ -43,23 +45,26 @@ KOR_ADDR = "Космонавта Стрекалова, 54"
 KOR_META = "15 минут от городского парка"
 KOR_PHONE = "+7 (991) 650-82-13"
 
+_logo_cut = BRAND / "aura-logo.png"
+_logo_raw = BRAND / "aura-logo-ref.png"
+LOGO_REF = _logo_cut if _logo_cut.exists() else _logo_raw
+
 
 def register_fonts() -> None:
     mapping = {
+        # Site faces (from hpaura.ru / Tilda)
+        "Jaipur": "jaipur.ttf",
+        "CoFo": "CoFoSans-Regular.ttf",
+        "CoFoM": "CoFoSans-Medium.ttf",
+        "CoFoB": "CoFoSans-Black.ttf",
+        "RobertI": "CoFoRobert-RegularIt.ttf",
+        # Fallbacks still used lightly
         "Mont": "Montserrat-Regular.ttf",
         "MontM": "Montserrat-Medium.ttf",
         "MontSB": "Montserrat-SemiBold.ttf",
         "MontB": "Montserrat-Bold.ttf",
         "MontL": "Montserrat-Light.ttf",
-        "Corm": "CormorantGaramond-Regular.ttf",
-        "CormM": "CormorantGaramond-Medium.ttf",
-        "CormSB": "CormorantGaramond-SemiBold.ttf",
-        "CormI": "CormorantGaramond-Italic.ttf",
-        "CormLI": "CormorantGaramond-LightItalic.ttf",
-        "Lit": "Literata-Regular.ttf",
         "LitI": "Literata-Italic.ttf",
-        "LitM": "Literata-Medium.ttf",
-        "LitSB": "Literata-SemiBold.ttf",
     }
     for name, file in mapping.items():
         path = FONTS / file
@@ -68,48 +73,96 @@ def register_fonts() -> None:
         pdfmetrics.registerFont(TTFont(name, str(path)))
 
 
-def fill_bg(c: canvas.Canvas, rgb=(0.055, 0.05, 0.045)) -> None:
-    c.setFillColorRGB(*rgb)
+def fill_bg(c: canvas.Canvas) -> None:
+    c.setFillColorRGB(*BLACK)
     c.rect(0, 0, W, H, fill=1, stroke=0)
 
 
-def soft_mist(c: canvas.Canvas, x, y, rx, ry, color, strength=0.10, steps=40) -> None:
-    """Diffuse elliptical wash — no hard rings."""
+def site_gradient(c: canvas.Canvas, strength: float = 1.0) -> None:
+    """Black → amber/orange like hpaura.ru hero and menu glow."""
+    steps = 64
+    for i in range(steps):
+        t = i / (steps - 1)
+        # horizontal wash: left black → right copper
+        r = BLACK[0] * (1 - t) + GLOW[0] * t * 0.55 * strength
+        g = BLACK[1] * (1 - t) + GLOW[1] * t * 0.35 * strength
+        b = BLACK[2] * (1 - t) + GLOW[2] * t * 0.12 * strength
+        c.setFillColorRGB(r, g, b)
+        c.rect(W * t, 0, W / steps + 0.5, H, fill=1, stroke=0)
+    # soft vertical dim so text stays readable
+    for i in range(24):
+        t = i / 23
+        a = 0.35 * (t ** 1.4)
+        c.setFillColorRGB(BLACK[0], BLACK[1], BLACK[2])
+        c.setFillColorRGB(
+            BLACK[0] * a + 0 * (1 - a),
+            BLACK[1] * a,
+            BLACK[2] * a,
+        )
+        # overlay from bottom
+        c.setFillColorRGB(*BLACK)
+        c.setStrokeColorRGB(*BLACK)
+    # translucent black veil top/bottom via bands
+    for i in range(30):
+        t = i / 29
+        # edges darker
+        edge = max(0, 1 - abs(2 * t - 1) * 1.15)
+        a = 0.22 * (1 - edge)
+        mix = tuple(BLACK[j] * a for j in range(3))
+        # draw as additive darkening by mixing toward black over current — approximate with rect opacity via color
+        c.setFillColorRGB(
+            BLACK[0] * (0.55 + 0.45 * edge),
+            BLACK[1] * (0.55 + 0.45 * edge),
+            BLACK[2] * (0.55 + 0.45 * edge),
+        )
+        # skip — keep gradient clean; use radial mist instead
+
+
+def soft_mist(c: canvas.Canvas, x, y, rx, ry, color, strength=0.22, steps=36) -> None:
     for i in range(steps, 0, -1):
         t = i / steps
-        a = strength * (t ** 2.4)
-        mix = tuple(0.055 * (1 - a) + color[j] * a for j in range(3))
+        a = strength * (t ** 2.2)
+        mix = tuple(BLACK[j] * (1 - a) + color[j] * a for j in range(3))
         c.setFillColorRGB(*mix)
         c.ellipse(x - rx * t, y - ry * t, x + rx * t, y + ry * t, fill=1, stroke=0)
 
 
-def soft_band(c: canvas.Canvas, y0, y1, color, strength=0.07, steps=36) -> None:
-    h = y1 - y0
-    for i in range(steps):
-        t = i / (steps - 1)
-        peak = 1 - abs(2 * t - 1)
-        a = strength * (peak ** 2.0)
-        mix = tuple(0.055 * (1 - a) + color[j] * a for j in range(3))
-        c.setFillColorRGB(*mix)
-        yy = y0 + h * t
-        c.rect(0, yy, W, h / steps + 0.4, fill=1, stroke=0)
+def paint_atmosphere(c: canvas.Canvas, variant: str, *, reverse: bool = False) -> None:
+    fill_bg(c)
+    if variant == "site" or reverse:
+        # Primary site look: left dark → right amber (hpaura.ru hero)
+        steps = 80
+        for i in range(steps):
+            t = i / (steps - 1)
+            ease = t ** 1.15
+            r = BLACK[0] * (1 - ease) + GLOW[0] * 0.78 * ease
+            g = BLACK[1] * (1 - ease) + GLOW[1] * 0.42 * ease
+            b = BLACK[2] * (1 - ease) + GLOW[2] * 0.12 * ease
+            c.setFillColorRGB(r, g, b)
+            c.rect(W * t, 0, W / steps + 0.6, H, fill=1, stroke=0)
+        # one soft bloom on the warm side — no stacked rings
+        soft_mist(c, W * 0.88, H * 0.5, 48 * mm, 55 * mm, GLOW, 0.18, 42)
+        return
 
-
-def soft_veil(c: canvas.Canvas, color, strength=0.045) -> None:
-    """Full-bleed quiet tint — almost flat atmosphere."""
-    for i in range(24):
-        t = i / 23
-        a = strength * (1 - abs(2 * t - 1)) ** 1.8
-        mix = tuple(0.055 * (1 - a) + color[j] * a for j in range(3))
-        c.setFillColorRGB(*mix)
-        c.rect(0, H * t, W, H / 24 + 0.5, fill=1, stroke=0)
+    if variant == "mist":
+        soft_mist(c, W * 0.7, H * 0.8, 70 * mm, 40 * mm, GLOW, 0.20, 36)
+        soft_mist(c, W * 0.25, H * 0.2, 45 * mm, 30 * mm, AMBER, 0.10, 28)
+    elif variant == "horizon":
+        for i in range(40):
+            t = i / 39
+            peak = 1 - abs(2 * t - 1)
+            a = 0.16 * (peak ** 1.6)
+            mix = tuple(BLACK[j] * (1 - a) + GLOW[j] * a for j in range(3))
+            c.setFillColorRGB(*mix)
+            c.rect(0, H * 0.2 + H * 0.55 * t, W, H * 0.55 / 40 + 0.4, fill=1, stroke=0)
+    else:  # orb
+        soft_mist(c, W * 0.5, H * 0.5, 70 * mm, 58 * mm, GLOW, 0.18, 40)
 
 
 def fold_marks(c: canvas.Canvas) -> None:
     mid = W / 2
     c.setStrokeColorRGB(*RULE)
     c.setLineWidth(0.3)
-    # short ticks only — fold gutter stays empty for scoring/fold
     c.line(mid, H - 3.5 * mm, mid, H - 8 * mm)
     c.line(mid, 3.5 * mm, mid, 8 * mm)
 
@@ -121,29 +174,48 @@ def hairline(c: canvas.Canvas, x1, y, x2, rgb=LINE, width=0.55) -> None:
 
 
 def draw_wordmark(c: canvas.Canvas, cx, y, *, size=22) -> None:
-    """Match electronic menu: Montserrat lowercase aura + tracked HOOKAHPLACE."""
     c.setFillColorRGB(*INK)
-    c.setFont("MontSB", size)
+    # Prefer site black/display face
+    c.setFont("CoFoB", size)
     c.drawCentredString(cx, y, "aura")
-    c.setFillColorRGB(*AMBER)
-    c.setFont("MontL", 6)
-    c.drawCentredString(cx, y - 4.2 * mm, "HOOKAHPLACE")
+    c.setFillColorRGB(*INK)
+    c.setFont("CoFo", 5.5)
+    c.drawCentredString(cx, y - 4.0 * mm, "HOOKAHPLACE")
+
+
+def draw_logo_image(c: canvas.Canvas, cx, cy, max_w, max_h) -> bool:
+    if not LOGO_REF.exists():
+        return False
+    from PIL import Image as PILImage
+
+    with PILImage.open(LOGO_REF) as im:
+        iw, ih = im.size
+    scale = min(max_w / iw, max_h / ih)
+    w, h = iw * scale, ih * scale
+    c.drawImage(
+        ImageReader(str(LOGO_REF)),
+        cx - w / 2,
+        cy - h / 2,
+        width=w,
+        height=h,
+        mask="auto",
+        preserveAspectRatio=True,
+    )
+    return True
+
+
+def draw_site_tagline(c: canvas.Canvas, cx: float, y_top: float) -> None:
+    """Match site hero: sans caps + italic serif caps (white)."""
+    c.setFillColorRGB(*INK)
+    c.setFont("CoFoM", 7)
+    c.drawCentredString(cx, y_top, "ЗДЕСЬ КАЖДАЯ ДЕТАЛЬ")
+    c.setFont("RobertI", 7)
+    c.drawCentredString(cx, y_top - 4.2 * mm, "ПОМОГАЕТ ЗАМЕДЛИТЬСЯ")
+    c.drawCentredString(cx, y_top - 8.4 * mm, "И НАСЛАДИТЬСЯ МОМЕНТОМ")
 
 
 def draw_interior(c: canvas.Canvas, variant: str) -> None:
-    fill_bg(c)
-
-    # Atmosphere only differs by variant; type matches menu everywhere
-    if variant == "mist":
-        soft_veil(c, AMBER, 0.07)
-        soft_band(c, H * 0.55, H * 1.05, AMBER, 0.05, 48)
-    elif variant == "horizon":
-        soft_veil(c, AMBER_DIM, 0.035)
-        soft_band(c, H * 0.28, H * 0.78, AMBER, 0.065, 40)
-    else:  # orb
-        soft_veil(c, AMBER_DIM, 0.03)
-        soft_mist(c, W * 0.5, H * 0.52, 68 * mm, 58 * mm, AMBER, 0.07, 44)
-
+    paint_atmosphere(c, variant, reverse=False)
     fold_marks(c)
 
     mid = W / 2
@@ -160,130 +232,106 @@ def draw_interior(c: canvas.Canvas, variant: str) -> None:
     # ---- LEFT ----
     draw_wordmark(c, cx, H - 14 * mm, size=20)
 
-    c.setFillColorRGB(*AMBER)
-    c.setFont("MontM", 7)
+    c.setFillColorRGB(*INK)
+    c.setFont("CoFoM", 6.5)
     c.drawCentredString(cx, H - 28 * mm, "ИМЯ МАСТЕРА")
-    hairline(c, left_x + 4 * mm, H - 32.5 * mm, left_r - 4 * mm)
+    hairline(c, left_x + 4 * mm, H - 32.5 * mm, left_r - 4 * mm, (0.9, 0.9, 0.9), 0.5)
 
     qr = 26 * mm
     qr_x = cx - qr / 2
     qr_y = H - 66 * mm
-    c.setFillColorRGB(0.07, 0.065, 0.055)
-    c.setStrokeColorRGB(*LINE)
+    c.setFillColorRGB(0.05, 0.05, 0.05)
+    c.setStrokeColorRGB(*INK)
     c.setLineWidth(0.7)
     c.roundRect(qr_x, qr_y, qr, qr, 1.2 * mm, fill=1, stroke=1)
 
     c.setFillColorRGB(*MUTED)
-    c.setFont("LitI", 7)
+    c.setFont("RobertI", 6.5)
     c.drawCentredString(cx, qr_y - 5.5 * mm, "Если понравился кальян — можете оставить чаевые")
 
     col_w = (left_w - 5 * mm) / 2
     base_y = 18 * mm
-    c.setFillColorRGB(*AMBER)
-    c.setFont("MontM", 6.5)
+    c.setFillColorRGB(*INK)
+    c.setFont("CoFoM", 6)
     c.drawCentredString(left_x + col_w / 2, base_y + 5 * mm, "№ СТОЛА")
-    hairline(c, left_x + 1 * mm, base_y, left_x + col_w - 1 * mm)
+    hairline(c, left_x + 1 * mm, base_y, left_x + col_w - 1 * mm, (0.9, 0.9, 0.9), 0.5)
     c.drawCentredString(left_x + col_w + 5 * mm + col_w / 2, base_y + 5 * mm, "ВРЕМЯ")
-    hairline(c, left_x + col_w + 6 * mm, base_y, left_r - 1 * mm)
+    hairline(c, left_x + col_w + 6 * mm, base_y, left_r - 1 * mm, (0.9, 0.9, 0.9), 0.5)
 
-    c.setFillColorRGB(*AMBER_DIM)
-    c.setFont("MontL", 5.5)
+    c.setFillColorRGB(*MUTED)
+    c.setFont("CoFo", 5.5)
     c.drawCentredString(cx, 8 * mm, SITE)
 
     # ---- RIGHT ----
     c.setFillColorRGB(*INK)
-    c.setFont("MontSB", 18)
-    c.drawCentredString(rcx, H - 15 * mm, "Mix")
-    c.setFillColorRGB(*AMBER)
-    c.setFont("LitI", 7.5)
-    c.drawCentredString(rcx, H - 21 * mm, "Special · авторский микс Ауры")
-    hairline(c, right_x + 8 * mm, H - 24.5 * mm, right_r - 8 * mm, AMBER_DIM, 0.4)
+    c.setFont("CoFoB", 20)
+    c.drawCentredString(rcx, H - 16 * mm, "Mix")
+    hairline(c, right_x + 10 * mm, H - 21 * mm, right_r - 10 * mm, (0.85, 0.85, 0.85), 0.4)
 
     line_x = right_x + 2 * mm
     line_w = right_w - 4 * mm
-    start_y = H - 36 * mm
-    gap = 10.5 * mm  # more air without bottom wordmark
+    start_y = H - 32 * mm
+    gap = 11 * mm
     for i in range(6):
         y = start_y - i * gap
-        c.setFillColorRGB(*AMBER)
-        c.circle(line_x + 1.2 * mm, y, 0.7 * mm, fill=1, stroke=0)
-        hairline(c, line_x + 4 * mm, y, line_x + line_w, LINE, 0.65)
+        c.setFillColorRGB(*INK)
+        c.circle(line_x + 1.2 * mm, y, 0.65 * mm, fill=1, stroke=0)
+        hairline(c, line_x + 4 * mm, y, line_x + line_w, (0.88, 0.88, 0.88), 0.55)
 
 
 def draw_reverse(c: canvas.Canvas, variant: str) -> None:
-    """Exterior / reverse spread: naming · logo · both venues · site."""
-    fill_bg(c)
-
-    if variant == "mist":
-        soft_veil(c, AMBER, 0.07)
-        soft_band(c, H * 0.35, H * 0.85, AMBER, 0.05, 48)
-    elif variant == "horizon":
-        soft_veil(c, AMBER_DIM, 0.035)
-        soft_band(c, H * 0.22, H * 0.8, AMBER, 0.06, 40)
-    else:
-        soft_veil(c, AMBER_DIM, 0.03)
-        soft_mist(c, W * 0.5, H * 0.5, 72 * mm, 62 * mm, AMBER, 0.065, 44)
-
+    paint_atmosphere(c, "site" if variant == "site" else variant, reverse=True)
     fold_marks(c)
 
     mid = W / 2
     left_cx = (9 * mm + mid - FOLD_GAP / 2) / 2
     right_cx = (mid + FOLD_GAP / 2 + W - 9 * mm) / 2
+    panel_w = mid - FOLD_GAP / 2 - 9 * mm
 
-    # Left — naming / logo (menu fonts)
+    # Left — logo + site tagline
+    if not draw_logo_image(c, left_cx, H * 0.62, min(68 * mm, panel_w * 0.95), 28 * mm):
+        draw_wordmark(c, left_cx, H * 0.62, size=32)
+
+    draw_site_tagline(c, left_cx, H * 0.40)
     c.setFillColorRGB(*INK)
-    c.setFont("MontSB", 34)
-    c.drawCentredString(left_cx, H * 0.58, "aura")
-    c.setFillColorRGB(*AMBER)
-    c.setFont("MontL", 7.5)
-    c.drawCentredString(left_cx, H * 0.58 - 7 * mm, "HOOKAHPLACE")
-    c.setFillColorRGB(*MUTED)
-    c.setFont("LitI", 8)
-    c.drawCentredString(left_cx, H * 0.35, "Здесь каждая деталь")
-    c.drawCentredString(left_cx, H * 0.35 - 4.5 * mm, "помогает замедлиться")
-    c.setFillColorRGB(*AMBER)
-    c.setFont("MontSB", 8)
-    c.drawCentredString(left_cx, H * 0.18, SITE)
+    c.setFont("CoFoM", 8)
+    c.drawCentredString(left_cx, H * 0.16, SITE)
 
     # Right — both venues
     y = H * 0.78
     c.setFillColorRGB(*INK)
-    c.setFont("MontSB", 11)
+    c.setFont("CoFoB", 12)
     c.drawCentredString(right_cx, y, AURA_NAME)
-    c.setFillColorRGB(*AMBER)
-    c.setFont("MontL", 6)
+    c.setFont("CoFo", 5.5)
     c.drawCentredString(right_cx, y - 4 * mm, "HOOKAHPLACE")
-    c.setFillColorRGB(*INK)
-    c.setFont("MontM", 8)
+    c.setFont("CoFoM", 8)
     c.drawCentredString(right_cx, y - 10 * mm, AURA_ADDR)
     c.setFillColorRGB(*MUTED)
-    c.setFont("MontL", 6.5)
+    c.setFont("CoFo", 6.5)
     c.drawCentredString(right_cx, y - 14 * mm, AURA_META)
     c.setFillColorRGB(*INK)
-    c.setFont("MontM", 7.5)
+    c.setFont("CoFoM", 7.5)
     c.drawCentredString(right_cx, y - 19 * mm, AURA_PHONE)
 
-    hairline(c, right_cx - 20 * mm, y - 24 * mm, right_cx + 20 * mm, AMBER_DIM, 0.4)
+    hairline(c, right_cx - 20 * mm, y - 24 * mm, right_cx + 20 * mm, (0.85, 0.85, 0.85), 0.4)
 
     y2 = y - 32 * mm
     c.setFillColorRGB(*INK)
-    c.setFont("MontSB", 11)
+    c.setFont("CoFoB", 12)
     c.drawCentredString(right_cx, y2, KOR_NAME)
-    c.setFillColorRGB(*AMBER)
-    c.setFont("MontL", 6)
+    c.setFont("CoFo", 5.5)
     c.drawCentredString(right_cx, y2 - 4 * mm, "HOOKAHPLACE")
-    c.setFillColorRGB(*INK)
-    c.setFont("MontM", 8)
+    c.setFont("CoFoM", 8)
     c.drawCentredString(right_cx, y2 - 10 * mm, KOR_ADDR)
     c.setFillColorRGB(*MUTED)
-    c.setFont("MontL", 6.5)
+    c.setFont("CoFo", 6.5)
     c.drawCentredString(right_cx, y2 - 14 * mm, KOR_META)
     c.setFillColorRGB(*INK)
-    c.setFont("MontM", 7.5)
+    c.setFont("CoFoM", 7.5)
     c.drawCentredString(right_cx, y2 - 19 * mm, KOR_PHONE)
 
     c.setFillColorRGB(*MUTED)
-    c.setFont("MontL", 6.5)
+    c.setFont("CoFo", 6.5)
     c.drawCentredString(right_cx, 12 * mm, TELEGRAM)
 
 
@@ -298,7 +346,6 @@ def write_pdf(path: Path, variant: str) -> None:
     c.showPage()
     c.save()
 
-    # normalize via temp
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
         tmp_path = Path(tmp.name)
     src = fitz.open(path)
@@ -308,8 +355,7 @@ def write_pdf(path: Path, variant: str) -> None:
     tmp_path.unlink(missing_ok=True)
 
 
-def export_previews(pdf_path: Path, stem: str) -> list[Path]:
-    out: list[Path] = []
+def export_previews(pdf_path: Path, stem: str) -> None:
     doc = fitz.open(pdf_path)
     for i, page in enumerate(doc):
         side = "inside" if i == 0 else "outside"
@@ -317,15 +363,11 @@ def export_previews(pdf_path: Path, stem: str) -> list[Path]:
         pix = page.get_pixmap(matrix=fitz.Matrix(3.0, 3.0), alpha=False)
         for dest in (PUBLIC, ART, DOCS):
             dest.mkdir(parents=True, exist_ok=True)
-            p = dest / name
-            pix.save(str(p))
-        out.append(PUBLIC / name)
+            pix.save(str(dest / name))
         print(f"Wrote preview {name}")
-    # copy pdf
     for dest in (PUBLIC, ART, DOCS):
         (dest / pdf_path.name).write_bytes(pdf_path.read_bytes())
     doc.close()
-    return out
 
 
 def build() -> None:
@@ -334,38 +376,43 @@ def build() -> None:
     ART.mkdir(parents=True, exist_ok=True)
     DOCS.mkdir(parents=True, exist_ok=True)
 
-    variants = ("mist", "horizon", "orb")
+    # site = primary finished look; mist/horizon/orb keep atmosphere alternatives
+    variants = ("site", "mist", "horizon", "orb")
     for v in variants:
         pdf = DOCS / f"AURA_Kartochka_{v}.pdf"
         write_pdf(pdf, v)
         export_previews(pdf, f"AURA_Kartochka_{v}")
         print(f"Wrote {pdf}")
 
-    # default alias = mist (quietest)
-    default = DOCS / "AURA_Kartochka_mist.pdf"
-    for dest in (DOCS / "AURA_Kartochka_miksa.pdf", PUBLIC / "AURA_Kartochka_miksa.pdf", ART / "AURA_Kartochka_miksa.pdf"):
+    default = DOCS / "AURA_Kartochka_site.pdf"
+    for dest in (
+        DOCS / "AURA_Kartochka_miksa.pdf",
+        PUBLIC / "AURA_Kartochka_miksa.pdf",
+        ART / "AURA_Kartochka_miksa.pdf",
+    ):
         dest.write_bytes(default.read_bytes())
     for side in ("inside", "outside"):
-        src = PUBLIC / f"AURA_Kartochka_mist_{side}.png"
+        src = PUBLIC / f"AURA_Kartochka_site_{side}.png"
         for dest in (
             PUBLIC / f"AURA_Kartochka_miksa_{side}.png",
             ART / f"AURA_Kartochka_miksa_{side}.png",
             DOCS / f"AURA_Kartochka_miksa_{side}.png",
         ):
-            dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(src.read_bytes())
-        shot = ART / "screenshots" / f"aura-kartochka-{side}.png"
         try:
+            shot = ART / "screenshots" / f"aura-kartochka-{side}.png"
             shot.parent.mkdir(parents=True, exist_ok=True)
             shot.write_bytes(src.read_bytes())
         except OSError as exc:
-            print(f"skip screenshot {shot}: {exc}")
+            print(f"skip screenshot {exc}")
+    for dest in (
+        PUBLIC / "AURA_Kartochka_miksa.png",
+        ART / "AURA_Kartochka_miksa.png",
+        DOCS / "AURA_Kartochka_miksa.png",
+    ):
+        dest.write_bytes((PUBLIC / "AURA_Kartochka_site_inside.png").read_bytes())
 
-    # keep legacy single png as inside
-    for dest in (PUBLIC / "AURA_Kartochka_miksa.png", ART / "AURA_Kartochka_miksa.png", DOCS / "AURA_Kartochka_miksa.png"):
-        dest.write_bytes((PUBLIC / "AURA_Kartochka_mist_inside.png").read_bytes())
-
-    print("Done — variants: mist, horizon, orb (each: inside + outside)")
+    print("Done — primary: site (+ mist/horizon/orb)")
 
 
 if __name__ == "__main__":

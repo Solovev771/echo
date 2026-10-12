@@ -2,38 +2,44 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Аура · Карточка микса — варианты",
+  title: "Аура · Карточка микса",
   description:
-    "Варианты гостевой карточки HookahPlace Aura: разворот внутри и оборот с адресом.",
+    "Готовая карточка HookahPlace Aura в стиле hpaura.ru — разворот и оборот.",
 };
 
 type Variant = {
   id: string;
   title: string;
   note: string;
+  primary?: boolean;
 };
 
 const variants: Variant[] = [
   {
+    id: "site",
+    title: "Site",
+    note: "Основной результат — цвета и шрифты как на hpaura.ru.",
+    primary: true,
+  },
+  {
     id: "mist",
     title: "Mist",
-    note: "Самый тихий фон. Шрифты как в меню: Montserrat + Literata.",
+    note: "Альтернатива: более тихий фон.",
   },
   {
     id: "horizon",
     title: "Horizon",
-    note: "Горизонтальная полоса света. Те же шрифты меню.",
+    note: "Альтернатива: горизонтальная полоса света.",
   },
   {
     id: "orb",
     title: "Orb",
-    note: "Мягкий ореол по центру. Те же шрифты меню.",
+    note: "Альтернатива: мягкий ореол.",
   },
 ];
 
 function CardImage({ src, alt }: { src: string; alt: string }) {
   return (
-    // next/image not required for static public previews
     <img
       src={src}
       alt={alt}
@@ -44,18 +50,18 @@ function CardImage({ src, alt }: { src: string; alt: string }) {
 
 export default function CardPage() {
   return (
-    <main className="min-h-screen bg-[#0b0b0b] px-4 py-10 text-[#f0ebe4]">
+    <main className="min-h-screen bg-[#0b0b0b] px-4 py-10 text-[#f5f5f5]">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-12">
         <header className="space-y-3">
-          <p className="font-[family-name:var(--font-story)] text-3xl font-medium lowercase tracking-wide">
+          <p className="font-[family-name:var(--font-display)] text-3xl font-semibold lowercase tracking-tight">
             aura
           </p>
           <h1 className="font-[family-name:var(--font-display)] text-xl text-[#d4782a]">
-            Карточка микса — варианты
+            Карточка микса
           </h1>
-          <p className="max-w-2xl font-[family-name:var(--font-story)] text-sm italic text-[#a89f92]">
-            Посередине — зона сгиба. Сначала разворот для записи микса, ниже —
-            оборот: нейминг, лого, адрес, сайт. QR пустой.
+          <p className="max-w-2xl font-[family-name:var(--font-story)] text-sm italic text-[#a8a8a8]">
+            Стиль hpaura.ru: градиент, лого, слоган. Разворот для Mix, оборот с
+            двумя адресами. Сгиб по центру, QR пустой.
           </p>
           <nav className="flex flex-wrap gap-4 text-sm">
             <Link
@@ -66,7 +72,7 @@ export default function CardPage() {
             </Link>
             <Link
               href="/"
-              className="text-[#a89f92] underline-offset-4 hover:underline"
+              className="text-[#a8a8a8] underline-offset-4 hover:underline"
             >
               Меню
             </Link>
@@ -82,8 +88,9 @@ export default function CardPage() {
               <div>
                 <h2 className="font-[family-name:var(--font-display)] text-lg">
                   {v.title}
+                  {v.primary ? " · основной" : ""}
                 </h2>
-                <p className="mt-1 text-sm text-[#a89f92]">{v.note}</p>
+                <p className="mt-1 text-sm text-[#a8a8a8]">{v.note}</p>
               </div>
               <a
                 href={"/files/AURA_Kartochka_" + v.id + ".pdf"}
@@ -105,7 +112,7 @@ export default function CardPage() {
 
             <div className="space-y-3">
               <p className="text-xs uppercase tracking-[0.18em] text-[#d4782a]">
-                Оборот · нейминг / адрес / сайт
+                Оборот
               </p>
               <CardImage
                 src={"/files/AURA_Kartochka_" + v.id + "_outside.png"}
