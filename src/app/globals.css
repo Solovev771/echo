@@ -112,9 +112,12 @@
   overflow-x: hidden;
   background-color: var(--aura-black);
   background-image:
+    radial-gradient(ellipse 85% 55% at 50% -5%, rgba(212, 120, 42, 0.42), transparent 60%),
+    radial-gradient(ellipse 50% 35% at 12% 8%, rgba(232, 106, 23, 0.22), transparent 55%),
+    radial-gradient(ellipse 45% 30% at 88% 0%, rgba(224, 160, 64, 0.18), transparent 50%),
     radial-gradient(ellipse 70% 45% at 78% 100%, rgba(212, 120, 42, 0.38), transparent 58%),
     radial-gradient(ellipse 40% 30% at 90% 85%, rgba(232, 106, 23, 0.18), transparent 55%),
-    linear-gradient(180deg, #0b0b0b 0%, #101010 55%, #0b0b0b 100%);
+    linear-gradient(180deg, #16100a 0%, #0b0b0b 42%, #101010 70%, #0b0b0b 100%);
 }
 
 .menu-stage::before {
