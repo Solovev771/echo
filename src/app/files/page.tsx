@@ -41,27 +41,29 @@ export default function FilesPage() {
             </h2>
             <div className="flex flex-wrap gap-3 text-sm text-[#d4782a]">
               <Link href="/card" className="underline-offset-4 hover:underline">
-                Открыть
+                Все варианты
               </Link>
-              <a href="/files/AURA_Kartochka_miksa.png" className="underline-offset-4 hover:underline">
-                PNG
-              </a>
-              <a href="/files/AURA_Kartochka_miksa.pdf" className="underline-offset-4 hover:underline">
-                PDF
-              </a>
-              <a href="/files/AURA_Kartochka_miksa.html" className="underline-offset-4 hover:underline">
-                HTML
+              <a
+                href="/files/AURA_Kartochka_mist.pdf"
+                className="underline-offset-4 hover:underline"
+              >
+                PDF Mist
               </a>
             </div>
           </div>
           <p className="text-sm text-[#a8a8a8]">
-            Место под QR пустое — позже вставите свой код.
+            Разворот + оборот. Сгиб по центру. QR пустой. Смотрите все варианты на
+            странице карточки.
           </p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/files/AURA_Kartochka_miksa.png"
-            alt="Карточка микса"
-            className="w-full border border-[rgba(180,110,50,0.45)]"
+            src="/files/AURA_Kartochka_mist_inside.png"
+            alt="Карточка микса — разворот"
+            className="w-full border border-amber-900/40"
+          />
+          <img
+            src="/files/AURA_Kartochka_mist_outside.png"
+            alt="Карточка микса — оборот"
+            className="w-full border border-amber-900/40"
           />
         </section>
 
