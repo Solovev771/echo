@@ -431,16 +431,16 @@ def write_pdf(path: Path, variant: str) -> None:
 
 def export_previews(pdf_path: Path, stem: str) -> None:
     doc = fitz.open(pdf_path)
-    # page0 = cover (outside), page1 = open (inside)
-    names = ("outside", "inside")  # keep filenames; meaning: cover / open booklet
-    aliases = ("cover", "open")
+    # page0 = cover/outside, page1 = open/inside
+    labels_by_page = (("cover", "outside"), ("open", "inside"))
     for i, page in enumerate(doc):
         pix = page.get_pixmap(matrix=fitz.Matrix(3.0, 3.0), alpha=False)
-        for label in (names[i], aliases[i]):
+        png_bytes = pix.tobytes("png")
+        for label in labels_by_page[i]:
             name = f"{stem}_{label}.png"
             for dest in (PUBLIC, ART, DOCS):
                 dest.mkdir(parents=True, exist_ok=True)
-                pix.save(str(dest / name))
+                (dest / name).write_bytes(png_bytes)
             print(f"Wrote preview {name}")
     for dest in (PUBLIC, ART, DOCS):
         (dest / pdf_path.name).write_bytes(pdf_path.read_bytes())
