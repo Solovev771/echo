@@ -52,16 +52,16 @@ export default function FilesPage() {
             </div>
           </div>
           <p className="text-sm text-[#a8a8a8]">
-            Основной вариант в стиле hpaura.ru. Сгиб по центру, QR пустой.
+            Книжка: обложка снаружи и разворот внутри. Сгиб по центру, QR пустой.
           </p>
           <img
-            src="/files/AURA_Kartochka_site_inside.png"
-            alt="Карточка микса — разворот"
+            src="/files/AURA_Kartochka_site_cover.png"
+            alt="Карточка — обложка"
             className="w-full border border-amber-900/40"
           />
           <img
-            src="/files/AURA_Kartochka_site_outside.png"
-            alt="Карточка микса — оборот"
+            src="/files/AURA_Kartochka_site_open.png"
+            alt="Карточка — разворот"
             className="w-full border border-amber-900/40"
           />
         </section>

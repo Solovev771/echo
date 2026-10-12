@@ -312,15 +312,18 @@ def draw_interior(c: canvas.Canvas, variant: str) -> None:
     right_w = right_r - right_x
     rcx = right_x + right_w / 2
 
-    # ---- LEFT ----
-    draw_brand_block(c, cx, H - 17 * mm, mark_h=14 * mm, hp_size=5.0)
+    # ---- LEFT (inside left page of booklet) ----
+    # Cover already carries the logo — keep this page for writing
+    c.setFillColorRGB(*INK)
+    c.setFont("CoFoB", 14)
+    c.drawCentredString(cx, H - 14 * mm, "aura")
 
-    draw_tracked(c, "ИМЯ МАСТЕРА", cx, H - 32 * mm, "CoFo", 6.2, 0.7, rgb=INK)
-    write_band(c, left_x + 4 * mm, H - 37 * mm, left_w - 8 * mm, 3.4 * mm)
+    draw_tracked(c, "ИМЯ МАСТЕРА", cx, H - 26 * mm, "CoFo", 6.2, 0.7, rgb=INK)
+    write_band(c, left_x + 4 * mm, H - 31 * mm, left_w - 8 * mm, 3.4 * mm)
 
-    qr = 25 * mm
+    qr = 28 * mm
     qr_x = cx - qr / 2
-    qr_y = H - 69 * mm
+    qr_y = H - 66 * mm
     c.setFillColorRGB(0.05, 0.05, 0.05)
     c.setStrokeColorRGB(*INK)
     c.setLineWidth(0.7)
@@ -348,8 +351,6 @@ def draw_interior(c: canvas.Canvas, variant: str) -> None:
     )
     write_band(c, left_x + col_w + 6 * mm, base_y, col_w - 2 * mm, 3.2 * mm)
 
-    draw_tracked(c, SITE.upper(), cx, 8 * mm, "CoFo", 5.2, 0.8, rgb=MUTED)
-
     # ---- RIGHT ----
     c.setFillColorRGB(*INK)
     c.setFont("CoFoB", 19)
@@ -367,21 +368,18 @@ def draw_interior(c: canvas.Canvas, variant: str) -> None:
         write_band(c, line_x + 4 * mm, y, line_w - 4 * mm, 3.4 * mm)
 
 
-def draw_reverse(c: canvas.Canvas, variant: str) -> None:
+def draw_cover(c: canvas.Canvas, variant: str) -> None:
+    """Outside of booklet when flat: [BACK | FRONT].
+
+    Fold the right half over the left → front cover shows logo, back shows venues.
+    """
     paint_atmosphere(c, "site" if variant == "site" else variant, reverse=True)
     fold_marks(c)
 
     mid = W / 2
     left_cx = (9 * mm + mid - FOLD_GAP / 2) / 2
     right_cx = (mid + FOLD_GAP / 2 + W - 9 * mm) / 2
-    panel_w = mid - FOLD_GAP / 2 - 9 * mm
 
-    # Left — logo + site tagline
-    draw_brand_block(c, left_cx, H * 0.62, mark_h=22 * mm, hp_size=6.0)
-    draw_site_tagline(c, left_cx, H * 0.38)
-    draw_tracked(c, SITE.upper(), left_cx, H * 0.16, "CoFo", 6.5, 0.9, rgb=INK)
-
-    # Right — both venues (same type roles as site location cards)
     def venue_block(cx: float, y: float, addr: str, meta: str, phone: str) -> None:
         c.setFillColorRGB(*INK)
         c.setFont("CoFoB", 13)
@@ -396,22 +394,29 @@ def draw_reverse(c: canvas.Canvas, variant: str) -> None:
         c.setFont("CoFoM", 7.4)
         c.drawCentredString(cx, y - 19.5 * mm, phone)
 
+    # LEFT = back cover (addresses)
     y = H * 0.78
-    venue_block(right_cx, y, AURA_ADDR, AURA_META, AURA_PHONE)
-    hairline(c, right_cx - 20 * mm, y - 24.5 * mm, right_cx + 20 * mm, (0.85, 0.85, 0.85), 0.4)
-    venue_block(right_cx, y - 33 * mm, KOR_ADDR, KOR_META, KOR_PHONE)
+    venue_block(left_cx, y, AURA_ADDR, AURA_META, AURA_PHONE)
+    hairline(c, left_cx - 20 * mm, y - 24.5 * mm, left_cx + 20 * mm, (0.85, 0.85, 0.85), 0.4)
+    venue_block(left_cx, y - 33 * mm, KOR_ADDR, KOR_META, KOR_PHONE)
+    draw_tracked(c, TELEGRAM, left_cx, 12 * mm, "CoFo", 6.0, 0.5, rgb=MUTED)
 
-    draw_tracked(c, TELEGRAM, right_cx, 12 * mm, "CoFo", 6.0, 0.5, rgb=MUTED)
+    # RIGHT = front cover (logo + tagline)
+    draw_brand_block(c, right_cx, H * 0.62, mark_h=22 * mm, hp_size=6.0)
+    draw_site_tagline(c, right_cx, H * 0.38)
+    draw_tracked(c, SITE.upper(), right_cx, H * 0.16, "CoFo", 6.5, 0.9, rgb=INK)
 
 
 def write_pdf(path: Path, variant: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     c = canvas.Canvas(str(path), pagesize=(W, H))
-    c.setTitle(f"Аура · Карточка микса · {variant}")
+    c.setTitle(f"Аура · Карточка-книжка · {variant}")
     c.setAuthor("HookahPlace Aura")
-    draw_interior(c, variant)
+    # Page 1: outside (back | front) — print this side first
+    draw_cover(c, variant)
     c.showPage()
-    draw_reverse(c, variant)
+    # Page 2: inside open spread (left | Mix)
+    draw_interior(c, variant)
     c.showPage()
     c.save()
 
@@ -426,14 +431,17 @@ def write_pdf(path: Path, variant: str) -> None:
 
 def export_previews(pdf_path: Path, stem: str) -> None:
     doc = fitz.open(pdf_path)
+    # page0 = cover (outside), page1 = open (inside)
+    names = ("outside", "inside")  # keep filenames; meaning: cover / open booklet
+    aliases = ("cover", "open")
     for i, page in enumerate(doc):
-        side = "inside" if i == 0 else "outside"
-        name = f"{stem}_{side}.png"
         pix = page.get_pixmap(matrix=fitz.Matrix(3.0, 3.0), alpha=False)
-        for dest in (PUBLIC, ART, DOCS):
-            dest.mkdir(parents=True, exist_ok=True)
-            pix.save(str(dest / name))
-        print(f"Wrote preview {name}")
+        for label in (names[i], aliases[i]):
+            name = f"{stem}_{label}.png"
+            for dest in (PUBLIC, ART, DOCS):
+                dest.mkdir(parents=True, exist_ok=True)
+                pix.save(str(dest / name))
+            print(f"Wrote preview {name}")
     for dest in (PUBLIC, ART, DOCS):
         (dest / pdf_path.name).write_bytes(pdf_path.read_bytes())
     doc.close()

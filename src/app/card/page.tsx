@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Аура · Карточка микса",
+  title: "Аура · Карточка-книжка",
   description:
-    "Готовая карточка HookahPlace Aura в стиле hpaura.ru — разворот и оборот.",
+    "Карточка HookahPlace Aura складывается книжкой: обложка и внутренний разворот.",
 };
 
 type Variant = {
@@ -18,7 +18,7 @@ const variants: Variant[] = [
   {
     id: "site",
     title: "Site",
-    note: "Основной результат — цвета и шрифты как на hpaura.ru.",
+    note: "Основной вариант в стиле hpaura.ru.",
     primary: true,
   },
   {
@@ -57,11 +57,12 @@ export default function CardPage() {
             aura
           </p>
           <h1 className="font-[family-name:var(--font-display)] text-xl text-[#d4782a]">
-            Карточка микса
+            Карточка-книжка
           </h1>
           <p className="max-w-2xl font-[family-name:var(--font-story)] text-sm italic text-[#a8a8a8]">
-            Стиль hpaura.ru: градиент, лого, слоган. Разворот для Mix, оборот с
-            двумя адресами. Сгиб по центру, QR пустой.
+            Складывается по центру. Снаружи: задняя обложка (адреса) слева и
+            передняя (лого) справа. Внутри: мастер / QR и Mix. Печать: сторона 1 —
+            обложка, сторона 2 — разворот; переворот по короткой стороне.
           </p>
           <nav className="flex flex-wrap gap-4 text-sm">
             <Link
@@ -96,27 +97,27 @@ export default function CardPage() {
                 href={"/files/AURA_Kartochka_" + v.id + ".pdf"}
                 className="text-sm text-[#d4782a] underline-offset-4 hover:underline"
               >
-                PDF · 2 стороны
+                PDF · книжка
               </a>
             </div>
 
             <div className="space-y-3">
               <p className="text-xs uppercase tracking-[0.18em] text-[#d4782a]">
-                Разворот внутри
+                Обложка снаружи · задняя | передняя
               </p>
               <CardImage
-                src={"/files/AURA_Kartochka_" + v.id + "_inside.png"}
-                alt={v.title + " inside"}
+                src={"/files/AURA_Kartochka_" + v.id + "_cover.png"}
+                alt={v.title + " cover"}
               />
             </div>
 
             <div className="space-y-3">
               <p className="text-xs uppercase tracking-[0.18em] text-[#d4782a]">
-                Оборот
+                Разворот внутри · открытая книжка
               </p>
               <CardImage
-                src={"/files/AURA_Kartochka_" + v.id + "_outside.png"}
-                alt={v.title + " outside"}
+                src={"/files/AURA_Kartochka_" + v.id + "_open.png"}
+                alt={v.title + " open"}
               />
             </div>
           </section>
