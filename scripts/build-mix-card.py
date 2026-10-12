@@ -35,7 +35,8 @@ PANEL = (18, 16, 14)
 
 class Card(FPDF):
     def __init__(self):
-        super().__init__(orientation="L", unit="mm", format=(W, H))
+        # Custom (width, height) in mm — landscape card, no orientation swap
+        super().__init__(unit="mm", format=(W, H))
         self.set_auto_page_break(False)
         self.add_font("Sans", "", FONT)
         self.add_font("Sans", "B", FONT_B)
