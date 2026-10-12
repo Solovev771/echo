@@ -33,7 +33,7 @@ TELEGRAM = "@hp_aura"
 TAGLINE = "Здесь каждая деталь помогает замедлиться"
 
 # Both venues from hpaura.ru
-AURA_NAME = "Аура"
+AURA_NAME = "aura"
 AURA_ADDR = "Широкая, 29"
 AURA_META = "м. Медведково · 10 минут"
 AURA_PHONE = "+7 (916) 333-81-89"
