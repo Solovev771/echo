@@ -172,40 +172,32 @@ def hairline(c: canvas.Canvas, x1, y, x2, rgb=LINE, width=0.55) -> None:
 
 
 def write_band(c: canvas.Canvas, x, y, w, h=5.5 * mm) -> None:
-    """Quiet mist wash + white hairline under each write row."""
-    c.saveState()
-    layers = (
-        (1.00, 0.035),
-        (0.78, 0.045),
-        (0.55, 0.05),
-        (0.32, 0.04),
-    )
-    for scale, a in layers:
-        half_h = (h * 0.48) * scale
-        inset = (1 - scale) * 3.5 * mm
-        c.setFillAlpha(a)
-        c.setFillColorRGB(0.94, 0.90, 0.84)
-        c.roundRect(
-            x + inset,
-            y - half_h * 0.35,
-            max(w - 2 * inset, 2 * mm),
-            half_h * 1.35,
-            half_h * 0.85,
-            fill=1,
-            stroke=0,
-        )
-    c.restoreState()
-    # White thin baseline — quiet, readable on the amber wash
+    """White wash growing up from the baseline hairline."""
     baseline = y - h * 0.38
+    band_h = h * 1.85
+    steps = 36
+    c.saveState()
+    c.setFillColorRGB(*INK)
+    for i in range(steps):
+        # t=0 at baseline (strongest), t=1 at top (fades out)
+        t = i / (steps - 1)
+        a = 0.34 * ((1 - t) ** 1.35)
+        if a < 0.01:
+            continue
+        slice_h = band_h / steps + 0.2
+        c.setFillAlpha(a)
+        c.rect(x + 0.4 * mm, baseline + band_h * t, w - 0.8 * mm, slice_h, fill=1, stroke=0)
+    c.restoreState()
+    # White hairline — bottom edge the wash starts from
     c.saveState()
     c.setStrokeColorRGB(*INK)
-    c.setStrokeAlpha(0.55)
-    c.setLineWidth(0.55)
+    c.setStrokeAlpha(0.82)
+    c.setLineWidth(0.6)
     c.setLineCap(1)
-    c.line(x + 0.8 * mm, baseline, x + w - 0.8 * mm, baseline)
-    c.setStrokeAlpha(0.22)
-    c.setLineWidth(1.0)
-    c.line(x + 0.8 * mm, baseline, x + w - 0.8 * mm, baseline)
+    c.line(x + 0.4 * mm, baseline, x + w - 0.4 * mm, baseline)
+    c.setStrokeAlpha(0.32)
+    c.setLineWidth(1.1)
+    c.line(x + 0.4 * mm, baseline, x + w - 0.4 * mm, baseline)
     c.restoreState()
 
 
