@@ -172,42 +172,23 @@ def hairline(c: canvas.Canvas, x1, y, x2, rgb=LINE, width=0.55) -> None:
 
 
 def write_band(c: canvas.Canvas, x, y, w, h=5.5 * mm) -> None:
-    """White wash growing up from the baseline hairline (smooth, no banding)."""
+    """Quiet white lift above a single thin baseline — flat, not foggy."""
     baseline = y - h * 0.38
-    band_h = h * 1.9
+    band_h = h * 1.15
     c.saveState()
     c.setFillColorRGB(*INK)
-    # Nested fills from baseline: shorter = denser white near the line
-    layers = (
-        (0.28, 1.00),
-        (0.22, 0.88),
-        (0.17, 0.74),
-        (0.12, 0.58),
-        (0.08, 0.42),
-        (0.045, 0.28),
-    )
-    for a, scale in layers:
-        c.setFillAlpha(a)
-        c.roundRect(
-            x + 0.35 * mm,
-            baseline,
-            w - 0.7 * mm,
-            band_h * scale,
-            0.7 * mm,
-            fill=1,
-            stroke=0,
-        )
+    # Two soft passes only — enough to read as a field, not a volume
+    c.setFillAlpha(0.10)
+    c.rect(x + 0.4 * mm, baseline, w - 0.8 * mm, band_h, fill=1, stroke=0)
+    c.setFillAlpha(0.08)
+    c.rect(x + 0.4 * mm, baseline, w - 0.8 * mm, band_h * 0.45, fill=1, stroke=0)
     c.restoreState()
-    # White hairline — bottom edge the wash starts from
     c.saveState()
     c.setStrokeColorRGB(*INK)
-    c.setStrokeAlpha(0.85)
-    c.setLineWidth(0.6)
+    c.setStrokeAlpha(0.62)
+    c.setLineWidth(0.5)
     c.setLineCap(1)
-    c.line(x + 0.35 * mm, baseline, x + w - 0.35 * mm, baseline)
-    c.setStrokeAlpha(0.30)
-    c.setLineWidth(1.1)
-    c.line(x + 0.35 * mm, baseline, x + w - 0.35 * mm, baseline)
+    c.line(x + 0.4 * mm, baseline, x + w - 0.4 * mm, baseline)
     c.restoreState()
 
 
