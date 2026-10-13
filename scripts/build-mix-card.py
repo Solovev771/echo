@@ -54,12 +54,17 @@ def register_fonts() -> None:
     # Exact faces from hpaura.ru @font-face (Tilda "Jaipur" family):
     # 100=CoFoSans Regular, 300=CoFoRobert Italic, 400=jaipur,
     # 500=CoFoSans Medium, 900=CoFoSans Black
+    # Onest — slightly rounder for Mix panel labels (less sharp than CoFo)
     mapping = {
         "Jaipur": "jaipur.ttf",
         "CoFo": "CoFoSans-Regular.ttf",
         "CoFoM": "CoFoSans-Medium.ttf",
         "CoFoB": "CoFoSans-Black.ttf",
         "RobertI": "CoFoRobert-RegularIt.ttf",
+        "Onest": "Onest-Regular.ttf",
+        "OnestM": "Onest-Medium.ttf",
+        "OnestB": "Onest-SemiBold.ttf",
+        "OnestBlk": "Onest-Bold.ttf",
     }
     for name, file in mapping.items():
         path = FONTS / file
@@ -167,45 +172,42 @@ def hairline(c: canvas.Canvas, x1, y, x2, rgb=LINE, width=0.55) -> None:
 
 
 def write_band(c: canvas.Canvas, x, y, w, h=5.5 * mm) -> None:
-    """Soft mist for writing — low contrast, feathered, no hard outline."""
-    # vertical + horizontal feather via nested translucent ellipses/rects
+    """Quiet mist wash + dark hairline under each write row."""
+    # Very soft lift so the pen area is felt, not boxed
     c.saveState()
     layers = (
-        (1.00, 0.06),
-        (0.82, 0.08),
-        (0.64, 0.10),
-        (0.46, 0.12),
-        (0.30, 0.10),
-        (0.18, 0.07),
+        (1.00, 0.035),
+        (0.78, 0.045),
+        (0.55, 0.05),
+        (0.32, 0.04),
     )
     for scale, a in layers:
-        half_h = (h * 0.5) * scale
-        inset = (1 - scale) * 4 * mm
-        try:
-            c.setFillColorRGB(0.92, 0.88, 0.82, alpha=a)
-        except TypeError:
-            c.setFillAlpha(a)
-            c.setFillColorRGB(0.92, 0.88, 0.82)
-        # rounded soft body
+        half_h = (h * 0.48) * scale
+        inset = (1 - scale) * 3.5 * mm
+        c.setFillAlpha(a)
+        c.setFillColorRGB(0.94, 0.90, 0.84)
         c.roundRect(
             x + inset,
-            y - half_h,
+            y - half_h * 0.35,
             max(w - 2 * inset, 2 * mm),
-            half_h * 2,
-            half_h * 0.9,
+            half_h * 1.35,
+            half_h * 0.85,
             fill=1,
             stroke=0,
         )
     c.restoreState()
-    # barely-there guide
+    # Dark thin baseline — primary writing cue, quiet but readable
+    baseline = y - h * 0.38
     c.saveState()
-    try:
-        c.setStrokeColorRGB(0.9, 0.86, 0.8, alpha=0.22)
-    except TypeError:
-        c.setStrokeAlpha(0.22)
-        c.setStrokeColorRGB(0.9, 0.86, 0.8)
-    c.setLineWidth(0.35)
-    c.line(x + 3 * mm, y, x + w - 3 * mm, y)
+    c.setStrokeColorRGB(0.08, 0.07, 0.06)
+    c.setStrokeAlpha(0.72)
+    c.setLineWidth(0.65)
+    c.setLineCap(1)
+    c.line(x + 0.8 * mm, baseline, x + w - 0.8 * mm, baseline)
+    # second pass slightly softer / wider for a printed “ink” feel
+    c.setStrokeAlpha(0.28)
+    c.setLineWidth(1.15)
+    c.line(x + 0.8 * mm, baseline, x + w - 0.8 * mm, baseline)
     c.restoreState()
 
 
@@ -315,11 +317,11 @@ def draw_interior(c: canvas.Canvas, variant: str) -> None:
     # ---- LEFT (inside left page of booklet) ----
     # Cover already carries the logo — keep this page for writing
     c.setFillColorRGB(*INK)
-    c.setFont("CoFoB", 14)
+    c.setFont("OnestM", 13.5)
     c.drawCentredString(cx, H - 14 * mm, "aura")
 
-    draw_tracked(c, "ИМЯ МАСТЕРА", cx, H - 26 * mm, "CoFo", 6.2, 0.7, rgb=INK)
-    write_band(c, left_x + 4 * mm, H - 31 * mm, left_w - 8 * mm, 3.4 * mm)
+    draw_tracked(c, "ИМЯ МАСТЕРА", cx, H - 26 * mm, "Onest", 6.0, 0.5, rgb=INK)
+    write_band(c, left_x + 4 * mm, H - 31 * mm, left_w - 8 * mm, 3.6 * mm)
 
     qr = 28 * mm
     qr_x = cx - qr / 2
@@ -336,36 +338,36 @@ def draw_interior(c: canvas.Canvas, variant: str) -> None:
     col_w = (left_w - 5 * mm) / 2
     base_y = 18 * mm
     draw_tracked(
-        c, "№ СТОЛА", left_x + col_w / 2, base_y + 5.5 * mm, "CoFo", 5.8, 0.55, rgb=INK
+        c, "№ СТОЛА", left_x + col_w / 2, base_y + 5.5 * mm, "Onest", 5.8, 0.45, rgb=INK
     )
-    write_band(c, left_x + 1 * mm, base_y, col_w - 2 * mm, 3.2 * mm)
+    write_band(c, left_x + 1 * mm, base_y, col_w - 2 * mm, 3.4 * mm)
     draw_tracked(
         c,
         "ВРЕМЯ",
         left_x + col_w + 5 * mm + col_w / 2,
         base_y + 5.5 * mm,
-        "CoFo",
+        "Onest",
         5.8,
-        0.55,
+        0.45,
         rgb=INK,
     )
-    write_band(c, left_x + col_w + 6 * mm, base_y, col_w - 2 * mm, 3.2 * mm)
+    write_band(c, left_x + col_w + 6 * mm, base_y, col_w - 2 * mm, 3.4 * mm)
 
     # ---- RIGHT ----
     c.setFillColorRGB(*INK)
-    c.setFont("CoFoB", 19)
-    c.drawCentredString(rcx, H - 16 * mm, "Mix")
-    hairline(c, right_x + 10 * mm, H - 21 * mm, right_r - 10 * mm, (0.85, 0.85, 0.85), 0.4)
+    c.setFont("OnestM", 18.5)
+    c.drawCentredString(rcx, H - 15.5 * mm, "Mix")
+    hairline(c, right_x + 10 * mm, H - 20.5 * mm, right_r - 10 * mm, (0.85, 0.85, 0.85), 0.4)
 
     line_x = right_x + 2 * mm
     line_w = right_w - 4 * mm
-    start_y = H - 32 * mm
-    gap = 11 * mm
+    start_y = H - 30.5 * mm
+    gap = 13.2 * mm
     for i in range(6):
         y = start_y - i * gap
         c.setFillColorRGB(*INK)
-        c.circle(line_x + 1.2 * mm, y, 0.65 * mm, fill=1, stroke=0)
-        write_band(c, line_x + 4 * mm, y, line_w - 4 * mm, 3.4 * mm)
+        c.circle(line_x + 1.2 * mm, y, 0.55 * mm, fill=1, stroke=0)
+        write_band(c, line_x + 4 * mm, y, line_w - 4 * mm, 3.8 * mm)
 
 
 def draw_cover(c: canvas.Canvas, variant: str) -> None:
