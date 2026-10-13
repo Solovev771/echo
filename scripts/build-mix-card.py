@@ -172,8 +172,7 @@ def hairline(c: canvas.Canvas, x1, y, x2, rgb=LINE, width=0.55) -> None:
 
 
 def write_band(c: canvas.Canvas, x, y, w, h=5.5 * mm) -> None:
-    """Quiet mist wash + dark hairline under each write row."""
-    # Very soft lift so the pen area is felt, not boxed
+    """Quiet mist wash + white hairline under each write row."""
     c.saveState()
     layers = (
         (1.00, 0.035),
@@ -196,18 +195,28 @@ def write_band(c: canvas.Canvas, x, y, w, h=5.5 * mm) -> None:
             stroke=0,
         )
     c.restoreState()
-    # Dark thin baseline — primary writing cue, quiet but readable
+    # White thin baseline — quiet, readable on the amber wash
     baseline = y - h * 0.38
     c.saveState()
-    c.setStrokeColorRGB(0.08, 0.07, 0.06)
-    c.setStrokeAlpha(0.72)
-    c.setLineWidth(0.65)
+    c.setStrokeColorRGB(*INK)
+    c.setStrokeAlpha(0.55)
+    c.setLineWidth(0.55)
     c.setLineCap(1)
     c.line(x + 0.8 * mm, baseline, x + w - 0.8 * mm, baseline)
-    # second pass slightly softer / wider for a printed “ink” feel
-    c.setStrokeAlpha(0.28)
-    c.setLineWidth(1.15)
+    c.setStrokeAlpha(0.22)
+    c.setLineWidth(1.0)
     c.line(x + 0.8 * mm, baseline, x + w - 0.8 * mm, baseline)
+    c.restoreState()
+
+
+def write_dot(c: canvas.Canvas, x: float, y: float) -> None:
+    """Small soft bullet — less heavy than a solid blob."""
+    c.saveState()
+    c.setFillColorRGB(*INK)
+    c.setFillAlpha(0.35)
+    c.circle(x, y, 0.55 * mm, fill=1, stroke=0)
+    c.setFillAlpha(0.85)
+    c.circle(x, y, 0.32 * mm, fill=1, stroke=0)
     c.restoreState()
 
 
@@ -365,8 +374,7 @@ def draw_interior(c: canvas.Canvas, variant: str) -> None:
     gap = 13.2 * mm
     for i in range(6):
         y = start_y - i * gap
-        c.setFillColorRGB(*INK)
-        c.circle(line_x + 1.2 * mm, y, 0.55 * mm, fill=1, stroke=0)
+        write_dot(c, line_x + 1.2 * mm, y)
         write_band(c, line_x + 4 * mm, y, line_w - 4 * mm, 3.8 * mm)
 
 
