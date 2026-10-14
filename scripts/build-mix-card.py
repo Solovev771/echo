@@ -172,23 +172,54 @@ def hairline(c: canvas.Canvas, x1, y, x2, rgb=LINE, width=0.55) -> None:
 
 
 def write_band(c: canvas.Canvas, x, y, w, h=5.5 * mm) -> None:
-    """Quiet white lift above a single thin baseline — flat, not foggy."""
+    """Soft blurred write field — no hard edges, quiet white baseline."""
     baseline = y - h * 0.38
-    band_h = h * 1.15
+    band_h = h * 1.25
     c.saveState()
     c.setFillColorRGB(*INK)
-    # Two soft passes only — enough to read as a field, not a volume
-    c.setFillAlpha(0.10)
-    c.rect(x + 0.4 * mm, baseline, w - 0.8 * mm, band_h, fill=1, stroke=0)
-    c.setFillAlpha(0.08)
-    c.rect(x + 0.4 * mm, baseline, w - 0.8 * mm, band_h * 0.45, fill=1, stroke=0)
+    # Feathered mist: outer soft, denser near the baseline, no box edges
+    layers = (
+        (1.00, 0.045, 0.55),
+        (0.90, 0.06, 0.70),
+        (0.78, 0.075, 0.85),
+        (0.62, 0.09, 1.00),
+        (0.42, 0.07, 1.15),
+        (0.24, 0.04, 1.35),
+    )
+    for h_scale, a, inset_mm in layers:
+        inset = inset_mm * mm * 0.55
+        bh = band_h * h_scale
+        # sit mostly above baseline, slight bleed below for blur
+        by = baseline - bh * 0.08
+        c.setFillAlpha(a)
+        c.roundRect(
+            x + inset,
+            by,
+            max(w - 2 * inset, 2 * mm),
+            bh,
+            min(bh * 0.48, 2.2 * mm),
+            fill=1,
+            stroke=0,
+        )
     c.restoreState()
+    # Soft baseline — fades at the ends, no hard terminals
     c.saveState()
     c.setStrokeColorRGB(*INK)
-    c.setStrokeAlpha(0.62)
-    c.setLineWidth(0.5)
     c.setLineCap(1)
-    c.line(x + 0.4 * mm, baseline, x + w - 0.4 * mm, baseline)
+    line_pad = 1.8 * mm
+    x1, x2 = x + line_pad, x + w - line_pad
+    span = x2 - x1
+    segs = 20
+    for i in range(segs):
+        t0 = i / segs
+        t1 = (i + 1) / segs
+        # stronger in the middle, soft tips
+        mid = (t0 + t1) / 2
+        edge = min(mid, 1 - mid) * 2
+        a = 0.48 * (edge ** 0.65)
+        c.setStrokeAlpha(a)
+        c.setLineWidth(0.45)
+        c.line(x1 + span * t0, baseline, x1 + span * t1, baseline)
     c.restoreState()
 
 
