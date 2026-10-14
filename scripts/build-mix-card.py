@@ -175,28 +175,16 @@ def write_band(c: canvas.Canvas, x, y, w, h=5.5 * mm) -> None:
     """Blurred white haze above a soft baseline — no pill, no hard edge."""
     baseline = y - h * 0.38
     cx = x + w / 2
-    # Horizontal soft mist: many ellipses, denser near baseline center
     c.saveState()
     c.setFillColorRGB(*INK)
-    steps = 22
+    # Dense ellipse stack with tiny alpha steps → smooth blur, no rings
+    steps = 48
     for i in range(steps, 0, -1):
         t = i / steps
-        # falloff: soft outer glow, quiet core
-        a = 0.095 * (t ** 2.4)
-        rx = (w * 0.48) * (0.55 + 0.45 * t)
-        ry = h * (0.55 + 0.95 * t)
-        # bias mist upward from the line
-        cy = baseline + ry * 0.35
-        c.setFillAlpha(a)
-        c.ellipse(cx - rx, cy - ry, cx + rx, cy + ry, fill=1, stroke=0)
-    # second pass: low band hugging the line
-    steps2 = 14
-    for i in range(steps2, 0, -1):
-        t = i / steps2
-        a = 0.07 * (t ** 1.8)
-        rx = (w * 0.46) * (0.65 + 0.35 * t)
-        ry = h * 0.55 * t
-        cy = baseline + ry * 0.15
+        a = 0.028 * (t ** 1.65)
+        rx = (w * 0.49) * (0.42 + 0.58 * t)
+        ry = h * (0.35 + 0.85 * t)
+        cy = baseline + ry * 0.28
         c.setFillAlpha(a)
         c.ellipse(cx - rx, cy - ry, cx + rx, cy + ry, fill=1, stroke=0)
     c.restoreState()
@@ -213,7 +201,7 @@ def write_band(c: canvas.Canvas, x, y, w, h=5.5 * mm) -> None:
         t1 = (i + 1) / segs
         mid = (t0 + t1) / 2
         edge = min(mid, 1 - mid) * 2
-        c.setStrokeAlpha(0.42 * (edge ** 0.7))
+        c.setStrokeAlpha(0.40 * (edge ** 0.7))
         c.setLineWidth(0.4)
         c.line(x1 + span * t0, baseline, x1 + span * t1, baseline)
     c.restoreState()
