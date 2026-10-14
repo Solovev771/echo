@@ -172,53 +172,49 @@ def hairline(c: canvas.Canvas, x1, y, x2, rgb=LINE, width=0.55) -> None:
 
 
 def write_band(c: canvas.Canvas, x, y, w, h=5.5 * mm) -> None:
-    """Soft blurred write field — no hard edges, quiet white baseline."""
+    """Blurred white haze above a soft baseline — no pill, no hard edge."""
     baseline = y - h * 0.38
-    band_h = h * 1.25
+    cx = x + w / 2
+    # Horizontal soft mist: many ellipses, denser near baseline center
     c.saveState()
     c.setFillColorRGB(*INK)
-    # Feathered mist: outer soft, denser near the baseline, no box edges
-    layers = (
-        (1.00, 0.045, 0.55),
-        (0.90, 0.06, 0.70),
-        (0.78, 0.075, 0.85),
-        (0.62, 0.09, 1.00),
-        (0.42, 0.07, 1.15),
-        (0.24, 0.04, 1.35),
-    )
-    for h_scale, a, inset_mm in layers:
-        inset = inset_mm * mm * 0.55
-        bh = band_h * h_scale
-        # sit mostly above baseline, slight bleed below for blur
-        by = baseline - bh * 0.08
+    steps = 22
+    for i in range(steps, 0, -1):
+        t = i / steps
+        # falloff: soft outer glow, quiet core
+        a = 0.095 * (t ** 2.4)
+        rx = (w * 0.48) * (0.55 + 0.45 * t)
+        ry = h * (0.55 + 0.95 * t)
+        # bias mist upward from the line
+        cy = baseline + ry * 0.35
         c.setFillAlpha(a)
-        c.roundRect(
-            x + inset,
-            by,
-            max(w - 2 * inset, 2 * mm),
-            bh,
-            min(bh * 0.48, 2.2 * mm),
-            fill=1,
-            stroke=0,
-        )
+        c.ellipse(cx - rx, cy - ry, cx + rx, cy + ry, fill=1, stroke=0)
+    # second pass: low band hugging the line
+    steps2 = 14
+    for i in range(steps2, 0, -1):
+        t = i / steps2
+        a = 0.07 * (t ** 1.8)
+        rx = (w * 0.46) * (0.65 + 0.35 * t)
+        ry = h * 0.55 * t
+        cy = baseline + ry * 0.15
+        c.setFillAlpha(a)
+        c.ellipse(cx - rx, cy - ry, cx + rx, cy + ry, fill=1, stroke=0)
     c.restoreState()
-    # Soft baseline — fades at the ends, no hard terminals
+    # Soft baseline — fades at the ends
     c.saveState()
     c.setStrokeColorRGB(*INK)
     c.setLineCap(1)
-    line_pad = 1.8 * mm
+    line_pad = 2.2 * mm
     x1, x2 = x + line_pad, x + w - line_pad
     span = x2 - x1
-    segs = 20
+    segs = 24
     for i in range(segs):
         t0 = i / segs
         t1 = (i + 1) / segs
-        # stronger in the middle, soft tips
         mid = (t0 + t1) / 2
         edge = min(mid, 1 - mid) * 2
-        a = 0.48 * (edge ** 0.65)
-        c.setStrokeAlpha(a)
-        c.setLineWidth(0.45)
+        c.setStrokeAlpha(0.42 * (edge ** 0.7))
+        c.setLineWidth(0.4)
         c.line(x1 + span * t0, baseline, x1 + span * t1, baseline)
     c.restoreState()
 
