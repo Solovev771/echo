@@ -158,11 +158,26 @@ def paint_atmosphere(c: canvas.Canvas, variant: str, *, reverse: bool = False) -
 
 
 def fold_marks(c: canvas.Canvas) -> None:
+    """Quiet fold cue at the booklet spine — tip marks + a short mid tick."""
     mid = W / 2
-    c.setStrokeColorRGB(*RULE)
-    c.setLineWidth(0.3)
-    c.line(mid, H - 3.5 * mm, mid, H - 8 * mm)
-    c.line(mid, 3.5 * mm, mid, 8 * mm)
+    c.saveState()
+    c.setStrokeColorRGB(*INK)
+    c.setLineCap(1)
+    # Edge ticks (for print/fold alignment)
+    c.setStrokeAlpha(0.35)
+    c.setLineWidth(0.35)
+    c.line(mid, H - 3 * mm, mid, H - 7.5 * mm)
+    c.line(mid, 3 * mm, mid, 7.5 * mm)
+    # Small center fold mark — readable, not a full divider
+    c.setStrokeAlpha(0.42)
+    c.setLineWidth(0.4)
+    c.line(mid, H / 2 - 6 * mm, mid, H / 2 + 6 * mm)
+    # Softer tips so the mid mark dissolves
+    c.setStrokeAlpha(0.18)
+    c.setLineWidth(0.55)
+    c.line(mid, H / 2 - 8 * mm, mid, H / 2 - 5.5 * mm)
+    c.line(mid, H / 2 + 5.5 * mm, mid, H / 2 + 8 * mm)
+    c.restoreState()
 
 
 def hairline(c: canvas.Canvas, x1, y, x2, rgb=LINE, width=0.55) -> None:
