@@ -1,16 +1,27 @@
 #!/usr/bin/env python3
-"""Polished PDF: Author's Menu elements — stories, recipes, aroma keys."""
+"""Author's Menu guide PDF — Platypus tables, airy spacing, no overlaps."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
+from reportlab.platypus import (
+    HRFlowable,
+    Image,
+    KeepTogether,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 FONTS = ROOT / "assets" / "fonts"
@@ -21,17 +32,17 @@ OUTS = [
     Path("/opt/cursor/artifacts") / "AURA_Elementy_miksy.pdf",
 ]
 
-# Soft Aura palette (menu: deep burgundy on warm white)
-INK = (0.12, 0.08, 0.07)
-MUTED = (0.42, 0.36, 0.34)
-ACCENT = (0.48, 0.12, 0.10)
-RULE = (0.88, 0.84, 0.81)
-WASH = (0.98, 0.96, 0.94)
-
 pdfmetrics.registerFont(TTFont("Onest", str(FONTS / "Onest-Regular.ttf")))
 pdfmetrics.registerFont(TTFont("OnestM", str(FONTS / "Onest-Medium.ttf")))
 pdfmetrics.registerFont(TTFont("OnestB", str(FONTS / "Onest-SemiBold.ttf")))
 pdfmetrics.registerFont(TTFont("Robert", str(FONTS / "CoFoRobert-RegularIt.ttf")))
+
+INK = colors.Color(0.12, 0.08, 0.07)
+MUTED = colors.Color(0.42, 0.36, 0.34)
+ACCENT = colors.Color(0.48, 0.12, 0.10)
+RULE = colors.Color(0.86, 0.82, 0.79)
+ROW = colors.Color(0.96, 0.94, 0.92)
+PAGE = colors.Color(0.99, 0.98, 0.97)
 
 MIXES = [
     {
@@ -44,10 +55,10 @@ MIXES = [
             "Ягодный Цветок тянет к своим. Не торопись."
         ),
         "recipe": [
-            ("Кактус", "Мякоть Пейота", 40),
-            ("Лемонграсс", "Цитрусовая свежесть", 30),
-            ("Бузина", "Ягодный Цветок", 20),
-            ("Алоэ", "Травянистый экстракт", 10),
+            ("Кактус", "Мякоть Пейота", "40%"),
+            ("Лемонграсс", "Цитрусовая свежесть", "30%"),
+            ("Бузина", "Ягодный Цветок", "20%"),
+            ("Алоэ", "Травянистый экстракт", "10%"),
         ],
     },
     {
@@ -59,10 +70,10 @@ MIXES = [
             "Мякоть Пейота, Зеленое Яблоко. Сел — и поехал. Без истерики."
         ),
         "recipe": [
-            ("Гоал", "Энергетик", 35),
-            ("Лаймовый сорбет", "Лаймовая вода", 25),
-            ("Кактус", "Мякоть Пейота", 20),
-            ("Айс гренни", "Зелёное яблоко", 20),
+            ("Гоал", "Энергетик", "35%"),
+            ("Лаймовый сорбет", "Лаймовая вода", "25%"),
+            ("Кактус", "Мякоть Пейота", "20%"),
+            ("Айс гренни", "Зелёное яблоко", "20%"),
         ],
     },
     {
@@ -75,10 +86,10 @@ MIXES = [
             "Не одиночество — своя комната на чашу."
         ),
         "recipe": [
-            ("Мёд", "Мадху", 35),
-            ("Кашмир гуава", "Пряная Гуава", 30),
-            ("Груша", "Дюшес", 20),
-            ("Кокос", "Сливочный орех", 15),
+            ("Мёд", "Мадху", "35%"),
+            ("Кашмир гуава", "Пряная Гуава", "30%"),
+            ("Груша", "Дюшес", "20%"),
+            ("Кокос", "Сливочный орех", "15%"),
         ],
     },
     {
@@ -90,10 +101,10 @@ MIXES = [
             "Сад Гесперид, Тропический сок, цитрус. Не разгоняет — раздвигает."
         ),
         "recipe": [
-            ("Памела", "Помело", 35),
-            ("Оранжина", "Сад Гесперид", 30),
-            ("Ананас", "Тропический сок", 20),
-            ("Лемонграсс", "Цитрусовая свежесть", 15),
+            ("Памела", "Помело", "35%"),
+            ("Оранжина", "Сад Гесперид", "30%"),
+            ("Ананас", "Тропический сок", "20%"),
+            ("Лемонграсс", "Цитрусовая свежесть", "15%"),
         ],
     },
 ]
@@ -201,273 +212,334 @@ AROMAS = [
 ]
 
 
-def wrap(c: canvas.Canvas, text: str, font: str, size: float, max_w: float) -> list[str]:
-    words = text.split()
-    lines: list[str] = []
-    cur = ""
-    for w in words:
-        trial = f"{cur} {w}".strip()
-        if c.stringWidth(trial, font, size) <= max_w:
-            cur = trial
-        else:
-            if cur:
-                lines.append(cur)
-            cur = w
-    if cur:
-        lines.append(cur)
-    return lines or [""]
+def styles() -> dict[str, ParagraphStyle]:
+    base = getSampleStyleSheet()
+    return {
+        "brand": ParagraphStyle(
+            "brand",
+            parent=base["Normal"],
+            fontName="Onest",
+            fontSize=8,
+            textColor=ACCENT,
+            alignment=TA_CENTER,
+            spaceAfter=2 * mm,
+            leading=11,
+        ),
+        "h1": ParagraphStyle(
+            "h1",
+            parent=base["Normal"],
+            fontName="OnestB",
+            fontSize=20,
+            textColor=INK,
+            alignment=TA_CENTER,
+            spaceAfter=3 * mm,
+            leading=24,
+        ),
+        "sub": ParagraphStyle(
+            "sub",
+            parent=base["Normal"],
+            fontName="Robert",
+            fontSize=11,
+            textColor=MUTED,
+            alignment=TA_CENTER,
+            spaceAfter=2 * mm,
+            leading=15,
+        ),
+        "meta": ParagraphStyle(
+            "meta",
+            parent=base["Normal"],
+            fontName="Onest",
+            fontSize=8.5,
+            textColor=MUTED,
+            alignment=TA_CENTER,
+            spaceAfter=6 * mm,
+            leading=12,
+        ),
+        "sec": ParagraphStyle(
+            "sec",
+            parent=base["Normal"],
+            fontName="OnestB",
+            fontSize=9,
+            textColor=ACCENT,
+            spaceBefore=4 * mm,
+            spaceAfter=5 * mm,
+            leading=12,
+        ),
+        "el": ParagraphStyle(
+            "el",
+            parent=base["Normal"],
+            fontName="OnestB",
+            fontSize=9,
+            textColor=ACCENT,
+            leading=12,
+        ),
+        "title": ParagraphStyle(
+            "title",
+            parent=base["Normal"],
+            fontName="OnestB",
+            fontSize=16,
+            textColor=INK,
+            leading=20,
+            spaceAfter=2 * mm,
+        ),
+        "keys": ParagraphStyle(
+            "keys",
+            parent=base["Normal"],
+            fontName="Robert",
+            fontSize=10.5,
+            textColor=MUTED,
+            leading=15,
+            spaceAfter=3.5 * mm,
+        ),
+        "story": ParagraphStyle(
+            "story",
+            parent=base["Normal"],
+            fontName="Robert",
+            fontSize=10.5,
+            textColor=INK,
+            leading=16,
+            spaceAfter=5 * mm,
+        ),
+        "th": ParagraphStyle(
+            "th",
+            parent=base["Normal"],
+            fontName="Onest",
+            fontSize=7.5,
+            textColor=MUTED,
+            leading=10,
+        ),
+        "th_r": ParagraphStyle(
+            "th_r",
+            parent=base["Normal"],
+            fontName="Onest",
+            fontSize=7.5,
+            textColor=MUTED,
+            alignment=TA_RIGHT,
+            leading=10,
+        ),
+        "td": ParagraphStyle(
+            "td",
+            parent=base["Normal"],
+            fontName="Onest",
+            fontSize=10,
+            textColor=INK,
+            leading=14,
+        ),
+        "td_m": ParagraphStyle(
+            "td_m",
+            parent=base["Normal"],
+            fontName="OnestM",
+            fontSize=10,
+            textColor=INK,
+            leading=14,
+        ),
+        "td_r": ParagraphStyle(
+            "td_r",
+            parent=base["Normal"],
+            fontName="OnestB",
+            fontSize=10,
+            textColor=INK,
+            alignment=TA_RIGHT,
+            leading=14,
+        ),
+        "name": ParagraphStyle(
+            "name",
+            parent=base["Normal"],
+            fontName="OnestB",
+            fontSize=12,
+            textColor=INK,
+            spaceBefore=3 * mm,
+            spaceAfter=2 * mm,
+            leading=16,
+        ),
+        "body": ParagraphStyle(
+            "body",
+            parent=base["Normal"],
+            fontName="Onest",
+            fontSize=9.5,
+            textColor=INK,
+            leading=14.5,
+            spaceAfter=3 * mm,
+        ),
+        "aroma": ParagraphStyle(
+            "aroma",
+            parent=base["Normal"],
+            fontName="OnestB",
+            fontSize=11,
+            textColor=INK,
+            spaceBefore=3 * mm,
+            spaceAfter=1.5 * mm,
+            leading=14,
+        ),
+        "tech": ParagraphStyle(
+            "tech",
+            parent=base["Normal"],
+            fontName="OnestM",
+            fontSize=8.5,
+            textColor=ACCENT,
+            spaceAfter=1.5 * mm,
+            leading=12,
+        ),
+        "foot": ParagraphStyle(
+            "foot",
+            parent=base["Normal"],
+            fontName="Onest",
+            fontSize=8,
+            textColor=MUTED,
+            alignment=TA_CENTER,
+            spaceBefore=4 * mm,
+            leading=11,
+        ),
+    }
 
 
-def draw() -> None:
-    for out in OUTS:
-        out.parent.mkdir(parents=True, exist_ok=True)
+def rule() -> HRFlowable:
+    return HRFlowable(
+        width="100%",
+        thickness=0.5,
+        color=RULE,
+        spaceBefore=3 * mm,
+        spaceAfter=6 * mm,
+    )
 
-    path = OUTS[0]
-    c = canvas.Canvas(str(path), pagesize=A4)
-    c.setTitle("Аура · Авторское меню · Огонь Вода Земля Воздух")
-    c.setAuthor("HookahPlace Aura / Solovev R.K.")
-    c.setPageCompression(1)
 
-    W, H = A4
-    left, right = 20 * mm, W - 20 * mm
-    width = right - left
-    bottom = 18 * mm
-    y = H - 18 * mm
-
-    def new_page():
-        nonlocal y
-        c.showPage()
-        # quiet page wash
-        c.setFillColorRGB(*WASH)
-        c.rect(0, 0, W, H, fill=1, stroke=0)
-        y = H - 18 * mm
-        # running header
-        c.setFillColorRGB(*MUTED)
-        c.setFont("Onest", 7.5)
-        c.drawString(left, H - 10 * mm, "aura  ·  авторское меню")
-        c.drawRightString(right, H - 10 * mm, "огонь · вода · земля · воздух")
-        c.setStrokeColorRGB(*RULE)
-        c.setLineWidth(0.4)
-        c.line(left, H - 12 * mm, right, H - 12 * mm)
-        y = H - 20 * mm
-
-    def need(h: float):
-        if y - h < bottom:
-            new_page()
-
-    def gap(h: float = 4):
-        nonlocal y
-        y -= h
-
-    def put(txt: str, font: str, size: float, rgb=INK, *, leading=None, x=None, max_w=None):
-        nonlocal y
-        x0 = left if x is None else x
-        mw = width if max_w is None else max_w
-        lead = leading or size * 1.4
-        for line in wrap(c, txt, font, size, mw):
-            need(lead + 1)
-            c.setFillColorRGB(*rgb)
-            c.setFont(font, size)
-            c.drawString(x0, y, line)
-            y -= lead
-
-    def hairline():
-        nonlocal y
-        need(10)
-        gap(3)
-        c.setStrokeColorRGB(*RULE)
-        c.setLineWidth(0.5)
-        c.line(left, y, right, y)
-        gap(8)
-
-    def section(label: str):
-        nonlocal y
-        need(18)
-        gap(2)
-        c.setFillColorRGB(*ACCENT)
-        c.setFont("OnestB", 9)
-        # tracked-ish small caps feel
-        c.drawString(left, y, label.upper())
-        gap(5)
-        c.setStrokeColorRGB(*ACCENT)
-        c.setLineWidth(0.9)
-        c.line(left, y, left + 14 * mm, y)
-        gap(10)
-
-    # First page background
-    c.setFillColorRGB(*WASH)
-    c.rect(0, 0, W, H, fill=1, stroke=0)
-
-    # Brand header
-    if LOGO.exists():
-        logo_h = 16 * mm
-        logo_w = logo_h * 1.15
-        c.drawImage(
-            ImageReader(str(LOGO)),
-            (W - logo_w) / 2,
-            y - logo_h + 2 * mm,
-            width=logo_w,
-            height=logo_h,
-            mask="auto",
-            preserveAspectRatio=True,
+def recipe_table(recipe: list[tuple[str, str, str]], s: dict) -> Table:
+    """Fixed tab stops: tech | guest | %"""
+    data = [
+        [
+            Paragraph("ТЕХН.", s["th"]),
+            Paragraph("ГОСТЮ", s["th"]),
+            Paragraph("%", s["th_r"]),
+        ]
+    ]
+    for tech, guest, pct in recipe:
+        data.append(
+            [
+                Paragraph(tech, s["td"]),
+                Paragraph(guest, s["td_m"]),
+                Paragraph(pct, s["td_r"]),
+            ]
         )
-        y -= logo_h + 3 * mm
-    c.setFillColorRGB(*ACCENT)
-    c.setFont("OnestB", 11)
-    brand = "HOOKAHPLACE"
-    # simple tracking
-    total = sum(c.stringWidth(ch, "OnestB", 8) for ch in brand) + 1.1 * (len(brand) - 1)
-    bx = (W - total) / 2
-    c.setFont("Onest", 8)
-    for ch in brand:
-        c.drawString(bx, y, ch)
-        bx += c.stringWidth(ch, "Onest", 8) + 1.1
-    gap(10)
 
-    c.setFillColorRGB(*INK)
-    c.setFont("OnestB", 22)
-    title = "Авторское меню"
-    c.drawCentredString(W / 2, y, title)
-    gap(9)
-    c.setFillColorRGB(*MUTED)
-    c.setFont("Robert", 10.5)
-    c.drawCentredString(
-        W / 2,
-        y,
-        "Огонь · Вода · Земля · Воздух",
+    # page content width ≈ 170mm with 20mm margins
+    col_widths = [55 * mm, 90 * mm, 25 * mm]
+    t = Table(data, colWidths=col_widths, hAlign="LEFT")
+    style_cmds = [
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 3),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.4, RULE),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
+        ("TOPPADDING", (0, 0), (-1, 0), 2),
+    ]
+    for i in range(1, len(data)):
+        if i % 2 == 1:
+            style_cmds.append(("BACKGROUND", (0, i), (-1, i), ROW))
+    t.setStyle(TableStyle(style_cmds))
+    return t
+
+
+def mix_block(mix: dict, s: dict) -> KeepTogether:
+    head = Table(
+        [
+            [
+                Paragraph(mix["element"], s["el"]),
+                Paragraph(mix["title"], s["title"]),
+            ]
+        ],
+        colWidths=[32 * mm, 138 * mm],
+        hAlign="LEFT",
     )
-    gap(5)
-    c.setFont("Onest", 8.5)
-    c.drawCentredString(
-        W / 2,
-        y,
-        "Сторитейлинг · составы · расшифровка ароматов",
+    head.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+            ]
+        )
     )
-    gap(8)
-    hairline()
+    return KeepTogether(
+        [
+            Spacer(1, 2 * mm),
+            head,
+            Paragraph(mix["keys"], s["keys"]),
+            Paragraph(mix["story"], s["story"]),
+            recipe_table(mix["recipe"], s),
+            rule(),
+        ]
+    )
 
-    # —— Mixes ——
-    section("Миксы")
 
-    col_tech = left
-    col_guest = left + 48 * mm
-    col_pct = right - 14 * mm
+def build(path: Path) -> None:
+    s = styles()
+    doc = SimpleDocTemplate(
+        str(path),
+        pagesize=A4,
+        leftMargin=20 * mm,
+        rightMargin=20 * mm,
+        topMargin=16 * mm,
+        bottomMargin=16 * mm,
+        title="Аура · Авторское меню · Огонь Вода Земля Воздух",
+        author="HookahPlace Aura / Solovev R.K.",
+    )
 
+    story: list = []
+
+    if LOGO.exists():
+        img = Image(str(LOGO), width=18 * mm, height=15.5 * mm)
+        img.hAlign = "CENTER"
+        story.append(img)
+        story.append(Spacer(1, 2 * mm))
+
+    story.append(Paragraph("HOOKAHPLACE", s["brand"]))
+    story.append(Paragraph("Авторское меню", s["h1"]))
+    story.append(Paragraph("Огонь · Вода · Земля · Воздух", s["sub"]))
+    story.append(Paragraph("Сторитейлинг · составы · расшифровка ароматов", s["meta"]))
+    story.append(rule())
+
+    story.append(Paragraph("МИКСЫ", s["sec"]))
     for mix in MIXES:
-        block_h = 48 * mm
-        need(block_h)
+        story.append(mix_block(mix, s))
 
-        # element + english title on one line
-        c.setFillColorRGB(*ACCENT)
-        c.setFont("OnestB", 9)
-        c.drawString(left, y, mix["element"])
-        c.setFillColorRGB(*INK)
-        c.setFont("OnestB", 16)
-        c.drawString(left + 28 * mm, y - 1, mix["title"])
-        gap(7)
-
-        c.setFillColorRGB(*MUTED)
-        c.setFont("Robert", 10)
-        c.drawString(left, y, mix["keys"])
-        gap(8)
-
-        for line in wrap(c, mix["story"], "Robert", 10.5, width):
-            need(14)
-            c.setFillColorRGB(*INK)
-            c.setFont("Robert", 10.5)
-            c.drawString(left, y, line)
-            y -= 14
-        gap(5)
-
-        # recipe rows — aligned columns
-        c.setFillColorRGB(*MUTED)
-        c.setFont("Onest", 7.5)
-        c.drawString(col_tech, y, "ТЕХН.")
-        c.drawString(col_guest, y, "ГОСТЮ")
-        c.drawRightString(col_pct + 12 * mm, y, "%")
-        gap(4)
-        c.setStrokeColorRGB(*RULE)
-        c.setLineWidth(0.35)
-        c.line(left, y + 2, right, y + 2)
-        gap(2)
-
-        for i, (tech, guest, pct) in enumerate(mix["recipe"]):
-            need(12)
-            if i % 2 == 0:
-                c.setFillColorRGB(0.96, 0.94, 0.92)
-                c.rect(left - 1 * mm, y - 2.2, width + 2 * mm, 9.5, fill=1, stroke=0)
-            c.setFillColorRGB(*INK)
-            c.setFont("Onest", 9.5)
-            c.drawString(col_tech, y, tech)
-            c.setFont("OnestM", 9.5)
-            c.drawString(col_guest, y, guest)
-            c.setFont("OnestB", 9.5)
-            c.drawRightString(col_pct + 12 * mm, y, f"{pct}%")
-            y -= 10
-
-        gap(6)
-        hairline()
-
-    # —— Names ——
-    section("Имена миксов")
+    story.append(Paragraph("ИМЕНА МИКСОВ", s["sec"]))
     for name, why in NAMES:
-        need(28)
-        c.setFillColorRGB(*INK)
-        c.setFont("OnestB", 12)
-        c.drawString(left, y, name)
-        gap(6)
-        for line in wrap(c, why, "Onest", 9.5, width):
-            need(13)
-            c.setFillColorRGB(*INK)
-            c.setFont("Onest", 9.5)
-            c.drawString(left, y, line)
-            y -= 13
-        gap(6)
+        story.append(Paragraph(name, s["name"]))
+        story.append(Paragraph(why, s["body"]))
 
-    hairline()
-
-    # —— Aromas ——
-    section("Ароматы")
-    put(
-        "Гостевое имя → технический аромат → откуда слово и зачем так назвали.",
-        "Robert",
-        9.5,
-        MUTED,
-        leading=13,
+    story.append(rule())
+    story.append(Paragraph("АРОМАТЫ", s["sec"]))
+    story.append(
+        Paragraph(
+            "Гостевое имя → технический аромат → откуда слово и зачем так назвали.",
+            s["keys"],
+        )
     )
-    gap(4)
-
     for guest, tech, why in AROMAS:
-        need(34)
-        c.setFillColorRGB(*INK)
-        c.setFont("OnestB", 11)
-        c.drawString(left, y, f"«{guest}»")
-        gap(5)
-        c.setFillColorRGB(*ACCENT)
-        c.setFont("OnestM", 8.5)
-        c.drawString(left, y, f"это  ·  {tech}")
-        gap(5)
-        for line in wrap(c, why, "Onest", 9.2, width):
-            need(12)
-            c.setFillColorRGB(*INK)
-            c.setFont("Onest", 9.2)
-            c.drawString(left, y, line)
-            y -= 12.2
-        gap(7)
+        story.append(Paragraph(f"«{guest}»", s["aroma"]))
+        story.append(Paragraph(f"это  ·  {tech}", s["tech"]))
+        story.append(Paragraph(why, s["body"]))
 
-    gap(4)
-    hairline()
-    c.setFillColorRGB(*MUTED)
-    c.setFont("Onest", 8)
-    c.drawCentredString(
-        W / 2,
-        y,
-        "Сделано Соловьевым Р.К.  ·  Made by Solovev R.K.  ·  hpaura.ru",
+    story.append(
+        Paragraph(
+            "Сделано Соловьевым Р.К.  ·  Made by Solovev R.K.  ·  hpaura.ru",
+            s["foot"],
+        )
     )
 
-    c.save()
+    def on_page(canvas, _doc):
+        canvas.saveState()
+        canvas.setFillColor(PAGE)
+        canvas.rect(0, 0, A4[0], A4[1], fill=1, stroke=0)
+        canvas.restoreState()
 
-    # Clean + compress via PyMuPDF for sharper/smaller deliverable
+    doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
+
+    # compress
     try:
         import tempfile
 
@@ -483,11 +555,17 @@ def draw() -> None:
     except Exception as exc:  # noqa: BLE001
         print(f"compress skip: {exc}")
 
-    data = path.read_bytes()
+
+def main() -> None:
+    for out in OUTS:
+        out.parent.mkdir(parents=True, exist_ok=True)
+    primary = OUTS[0]
+    build(primary)
+    data = primary.read_bytes()
     for dest in OUTS[1:]:
         dest.write_bytes(data)
-    print(f"Wrote {path} ({len(data)} bytes)")
+    print(f"Wrote {primary} ({len(data)} bytes)")
 
 
 if __name__ == "__main__":
-    draw()
+    main()
