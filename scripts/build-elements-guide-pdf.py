@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One-pager PDF: Огонь / Вода / Земля / Воздух — story, recipe, aroma keys."""
+"""PDF guide from the guest Author's Menu photo + station tech card."""
 
 from pathlib import Path
 
@@ -22,8 +22,8 @@ FONT_I = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 
 BLACK = (0.07, 0.07, 0.07)
 MUTED = (0.35, 0.35, 0.35)
-ACCENT = (0.91, 0.416, 0.09)
-LINE = (0.85, 0.85, 0.85)
+ACCENT = (0.55, 0.14, 0.12)  # deep red like the menu
+LINE = (0.82, 0.78, 0.76)
 
 pdfmetrics.registerFont(TTFont("DejaVu", FONT))
 pdfmetrics.registerFont(TTFont("DejaVuB", FONT_B))
@@ -31,8 +31,12 @@ pdfmetrics.registerFont(TTFont("Serif", FONT_I))
 
 MIXES = [
     {
-        "name": "Огонь",
-        "was": "Аура",
+        "element": "ОГОНЬ",
+        "title": "PHOENIX",
+        "keys": "Возрождение · Пробуждение · Искра",
+        "guest_line": (
+            "Мякоть пейота, цитрусовая свежесть, ягодный цветок и травянистый экстракт"
+        ),
         "story": (
             "Вход в Ауру. Не разгоняемся — собираем поле. "
             "Мякоть Пейота держит, цитрус режет лишний шум, "
@@ -46,22 +50,28 @@ MIXES = [
         ],
     },
     {
-        "name": "Вода",
-        "was": "Энергетический поток",
+        "element": "ВОДА",
+        "title": "ABYSS",
+        "keys": "Глубина · Поток · Течение",
+        "guest_line": (
+            "Энергетик, лаймовая вода, мякоть пейота и зелёное яблоко"
+        ),
         "story": (
             "Не кофе. Просто ток: Энергия, Лаймовая вода, "
             "Мякоть Пейота, Зеленое Яблоко. Сел — и поехал. Без истерики."
         ),
         "recipe": [
-            ("Гоал", "Энергия", 35),
+            ("Гоал", "Энергетик / Энергия", 35),
             ("Лаймовый сорбет", "Лаймовая вода", 25),
             ("Кактус", "Мякоть Пейота", 20),
-            ("Айс гренни", "Зеленое Яблоко", 20),
+            ("Айс гренни", "Зелёное яблоко", 20),
         ],
     },
     {
-        "name": "Земля",
-        "was": "Уединение",
+        "element": "ЗЕМЛЯ",
+        "title": "GAIA",
+        "keys": "Изобилие · Жизнь · Тепло",
+        "guest_line": "Мадху, пряная гуава, дюшес и сливочный орех",
         "story": (
             "Когда хочется сесть дальше от шума. Мадху густой, гуава греет, "
             "Дюшес мягкий, Сливочный орех закрывает мир снаружи. "
@@ -75,8 +85,12 @@ MIXES = [
         ],
     },
     {
-        "name": "Воздух",
-        "was": "Пространство",
+        "element": "ВОЗДУХ",
+        "title": "AETHER",
+        "keys": "Свобода · Лёгкость · Дыхание",
+        "guest_line": (
+            "Помело, сад Гесперид, тропический сок и цитрусовая свежесть"
+        ),
         "story": (
             "Когда в жизни тесно — вот этот микс. Помело с горчинкой, "
             "Сад Гесперид, Тропический сок, цитрус. Не разгоняет — раздвигает."
@@ -88,6 +102,29 @@ MIXES = [
             ("Лемонграсс", "Цитрусовая свежесть", 15),
         ],
     },
+]
+
+NAMES = [
+    (
+        "PHOENIX",
+        "Феникс — мифическая птица, которая сгорает и возрождается из пепла. "
+        "Имя микса про огонь как искру и новое начало.",
+    ),
+    (
+        "ABYSS",
+        "Abyss — бездна, глубокая водная пустота (греч. abyssos — бездонный). "
+        "Имя про глубину, поток и течение.",
+    ),
+    (
+        "GAIA",
+        "Гея — в греческой мифологии Земля, праматерь всего живого. "
+        "Имя про изобилие, жизнь и тепло.",
+    ),
+    (
+        "AETHER",
+        "Эфир / Aether — верхний воздух, чистая сущность, которой дышат боги. "
+        "Имя про свободу, лёгкость и дыхание.",
+    ),
 ]
 
 AROMAS = [
@@ -115,9 +152,10 @@ AROMAS = [
         "поэтому назвали по ощущению.",
     ),
     (
-        "Энергия",
+        "Энергетик / Энергия",
         "Гоал",
-        "Техн. «гоал» — тёмная ягода / черника с ударом. Имя взяли от эффекта микса, не от этикетки.",
+        "Техн. «гоал» — тёмная ягода / черника с ударом. В меню — «энергетик»: "
+        "имя от эффекта микса, не от этикетки.",
     ),
     (
         "Лаймовая вода",
@@ -125,7 +163,7 @@ AROMAS = [
         "«Сорбет» звучит как десерт. Вкус ближе к холодному кислому лайму — легче сказать «вода».",
     ),
     (
-        "Зеленое Яблоко",
+        "Зелёное яблоко",
         "Айс гренни",
         "Ice Granny — холодное зелёное яблоко. Английское имя убрали, оставили прямой образ фрукта.",
     ),
@@ -192,8 +230,8 @@ def draw() -> None:
 
     path = OUTS[0]
     c = canvas.Canvas(str(path), pagesize=A4)
-    c.setTitle("Аура · Огонь Вода Земля Воздух")
-    c.setAuthor("HookahPlace Aura")
+    c.setTitle("Аура · Авторское меню · Огонь Вода Земля Воздух")
+    c.setAuthor("HookahPlace Aura / Solovev R.K.")
     W, H = A4
     left, right = 18 * mm, W - 18 * mm
     width = right - left
@@ -227,38 +265,47 @@ def draw() -> None:
         c.line(left, y, right, y)
         y -= 8
 
-    # Cover / intro
-    text("АУРА", "DejaVuB", 22, ACCENT, 26)
-    text("Огонь · Вода · Земля · Воздух", "DejaVuB", 14, BLACK, 18)
+    text("aura  HOOKAHPLACE", "DejaVuB", 11, ACCENT, 14)
+    text("Авторское меню", "DejaVuB", 18, BLACK, 22)
     text(
-        "Сторитейлинг, составы для станции и расшифровка гостевых имён ароматов.",
+        "Огонь · Вода · Земля · Воздух — сторитейлинг, составы станции и расшифровка имён.",
         "DejaVu",
-        10,
+        9.5,
         MUTED,
-        14,
+        13,
     )
-    y -= 4
+    y -= 2
     rule()
 
-    # Mixes
-    text("1. Миксы", "DejaVuB", 13, ACCENT, 18)
+    text("1. Миксы как в меню", "DejaVuB", 13, ACCENT, 17)
     y -= 2
 
     for mix in MIXES:
-        need(55)
-        text(f"{mix['name']}  ·  было: {mix['was']}", "DejaVuB", 12, BLACK, 16)
+        need(62)
+        text(f"{mix['element']}  —  {mix['title']}", "DejaVuB", 12, BLACK, 16)
+        text(mix["keys"], "Serif", 10, MUTED, 13)
+        text(f"Гостю: {mix['guest_line']}", "DejaVu", 9.5, BLACK, 13)
+        y -= 1
         text("Сторитейлинг", "DejaVuB", 9, MUTED, 12)
-        text(mix["story"], "Serif", 10, BLACK, 14)
-        y -= 2
-        text("Состав (техн. — гостю — % · на 20 г)", "DejaVuB", 9, MUTED, 12)
+        text(mix["story"], "Serif", 10, BLACK, 13.5)
+        y -= 1
+        text("Станция · техн. — гостю — % (на 20 г)", "DejaVuB", 9, MUTED, 12)
         for tech, guest, pct in mix["recipe"]:
             g = round(20 * pct / 100, 1)
             text(f"• {tech} — {guest} — {pct}%  ({g} г)", "DejaVu", 10, BLACK, 13)
-        y -= 4
+        y -= 3
         rule()
 
-    # Aromas
-    text("2. Что стоит за красивыми словами", "DejaVuB", 13, ACCENT, 18)
+    text("2. Имена миксов", "DejaVuB", 13, ACCENT, 17)
+    y -= 2
+    for name, why in NAMES:
+        need(22)
+        text(f"«{name}»", "DejaVuB", 11, BLACK, 14)
+        text(why, "DejaVu", 9.5, BLACK, 13)
+        y -= 3
+
+    rule()
+    text("3. Что стоит за красивыми словами ароматов", "DejaVuB", 13, ACCENT, 17)
     text(
         "Гостевое имя → технический аромат → откуда слово и зачем так назвали.",
         "DejaVu",
@@ -269,23 +316,26 @@ def draw() -> None:
     y -= 3
 
     for guest, tech, why in AROMAS:
-        need(32)
+        need(30)
         text(f"«{guest}»", "DejaVuB", 11, BLACK, 14)
         text(f"это: {tech}", "DejaVu", 9, MUTED, 12)
         text(why, "DejaVu", 9.5, BLACK, 13)
-        y -= 4
+        y -= 3
 
-    y -= 2
     rule()
-    text("HookahPlace Aura · hpaura.ru · рабочая версия", "DejaVu", 8, MUTED, 11)
+    text(
+        "Сделано Соловьевым Р.К. / Made by Solovev R.K. · HookahPlace Aura · hpaura.ru",
+        "DejaVu",
+        8,
+        MUTED,
+        11,
+    )
 
     c.save()
     data = path.read_bytes()
     for dest in OUTS[1:]:
         dest.write_bytes(data)
     print(f"Wrote {path} ({len(data)} bytes)")
-    for dest in OUTS[1:]:
-        print(f"Copied {dest}")
 
 
 if __name__ == "__main__":
