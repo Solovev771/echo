@@ -284,15 +284,12 @@ def draw() -> None:
         need(62)
         text(f"{mix['element']}  —  {mix['title']}", "DejaVuB", 12, BLACK, 16)
         text(mix["keys"], "Serif", 10, MUTED, 13)
-        text(f"Гостю: {mix['guest_line']}", "DejaVu", 9.5, BLACK, 13)
         y -= 1
         text("Сторитейлинг", "DejaVuB", 9, MUTED, 12)
         text(mix["story"], "Serif", 10, BLACK, 13.5)
         y -= 1
-        text("Станция · техн. — гостю — % (на 20 г)", "DejaVuB", 9, MUTED, 12)
         for tech, guest, pct in mix["recipe"]:
-            g = round(20 * pct / 100, 1)
-            text(f"• {tech} — {guest} — {pct}%  ({g} г)", "DejaVu", 10, BLACK, 13)
+            text(f"• {tech} — {guest} — {pct}%", "DejaVu", 10, BLACK, 13)
         y -= 3
         rule()
 
