@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Author's Menu guide PDF — Platypus tables, airy spacing, no overlaps."""
+"""Author's Menu guide — 2 pages × 2 mixes, then names + aromas."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from reportlab.platypus import (
     HRFlowable,
     Image,
     KeepTogether,
+    PageBreak,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -70,7 +71,7 @@ MIXES = [
             "Мякоть Пейота, Зеленое Яблоко. Сел — и поехал. Без истерики."
         ),
         "recipe": [
-            ("Гоал", "Энергетик", "35%"),
+            ("Гоал", "Энергия", "35%"),
             ("Лаймовый сорбет", "Лаймовая вода", "25%"),
             ("Кактус", "Мякоть Пейота", "20%"),
             ("Айс гренни", "Зелёное яблоко", "20%"),
@@ -157,9 +158,9 @@ AROMAS = [
         "поэтому назвали по ощущению.",
     ),
     (
-        "Энергетик",
+        "Энергия",
         "Гоал",
-        "Техн. «гоал» — тёмная ягода / черника с ударом. В меню — «энергетик»: "
+        "Техн. «гоал» — тёмная ягода / черника с ударом. В меню — «Энергия»: "
         "имя от эффекта микса, не от этикетки.",
     ),
     (
@@ -216,263 +217,167 @@ def styles() -> dict[str, ParagraphStyle]:
     base = getSampleStyleSheet()
     return {
         "brand": ParagraphStyle(
-            "brand",
-            parent=base["Normal"],
-            fontName="Onest",
-            fontSize=8,
-            textColor=ACCENT,
-            alignment=TA_CENTER,
-            spaceAfter=2 * mm,
-            leading=11,
+            "brand", parent=base["Normal"], fontName="Onest", fontSize=8,
+            textColor=ACCENT, alignment=TA_CENTER, spaceAfter=2 * mm, leading=11,
         ),
         "h1": ParagraphStyle(
-            "h1",
-            parent=base["Normal"],
-            fontName="OnestB",
-            fontSize=20,
-            textColor=INK,
-            alignment=TA_CENTER,
-            spaceAfter=3 * mm,
-            leading=24,
+            "h1", parent=base["Normal"], fontName="OnestB", fontSize=20,
+            textColor=INK, alignment=TA_CENTER, spaceAfter=3 * mm, leading=24,
         ),
         "sub": ParagraphStyle(
-            "sub",
-            parent=base["Normal"],
-            fontName="Robert",
-            fontSize=11,
-            textColor=MUTED,
-            alignment=TA_CENTER,
-            spaceAfter=2 * mm,
-            leading=15,
+            "sub", parent=base["Normal"], fontName="Robert", fontSize=11,
+            textColor=MUTED, alignment=TA_CENTER, spaceAfter=2 * mm, leading=15,
         ),
         "meta": ParagraphStyle(
-            "meta",
-            parent=base["Normal"],
-            fontName="Onest",
-            fontSize=8.5,
-            textColor=MUTED,
-            alignment=TA_CENTER,
-            spaceAfter=6 * mm,
-            leading=12,
+            "meta", parent=base["Normal"], fontName="Onest", fontSize=8.5,
+            textColor=MUTED, alignment=TA_CENTER, spaceAfter=5 * mm, leading=12,
         ),
         "sec": ParagraphStyle(
-            "sec",
-            parent=base["Normal"],
-            fontName="OnestB",
-            fontSize=9,
-            textColor=ACCENT,
-            spaceBefore=4 * mm,
-            spaceAfter=5 * mm,
-            leading=12,
+            "sec", parent=base["Normal"], fontName="OnestB", fontSize=9,
+            textColor=ACCENT, spaceBefore=2 * mm, spaceAfter=6 * mm, leading=12,
         ),
         "el": ParagraphStyle(
-            "el",
-            parent=base["Normal"],
-            fontName="OnestB",
-            fontSize=9,
-            textColor=ACCENT,
-            leading=12,
+            "el", parent=base["Normal"], fontName="OnestB", fontSize=9,
+            textColor=ACCENT, leading=12,
         ),
         "title": ParagraphStyle(
-            "title",
-            parent=base["Normal"],
-            fontName="OnestB",
-            fontSize=16,
-            textColor=INK,
-            leading=20,
-            spaceAfter=2 * mm,
+            "title", parent=base["Normal"], fontName="OnestB", fontSize=18,
+            textColor=INK, leading=22, spaceAfter=2 * mm,
         ),
         "keys": ParagraphStyle(
-            "keys",
-            parent=base["Normal"],
-            fontName="Robert",
-            fontSize=10.5,
-            textColor=MUTED,
-            leading=15,
-            spaceAfter=3.5 * mm,
+            "keys", parent=base["Normal"], fontName="Robert", fontSize=11,
+            textColor=MUTED, leading=16, spaceAfter=4 * mm,
         ),
         "story": ParagraphStyle(
-            "story",
-            parent=base["Normal"],
-            fontName="Robert",
-            fontSize=10.5,
-            textColor=INK,
-            leading=16,
-            spaceAfter=5 * mm,
+            "story", parent=base["Normal"], fontName="Robert", fontSize=11,
+            textColor=INK, leading=17, spaceAfter=6 * mm,
         ),
         "th": ParagraphStyle(
-            "th",
-            parent=base["Normal"],
-            fontName="Onest",
-            fontSize=7.5,
-            textColor=MUTED,
-            leading=10,
+            "th", parent=base["Normal"], fontName="Onest", fontSize=7.5,
+            textColor=MUTED, leading=10,
         ),
         "th_r": ParagraphStyle(
-            "th_r",
-            parent=base["Normal"],
-            fontName="Onest",
-            fontSize=7.5,
-            textColor=MUTED,
-            alignment=TA_RIGHT,
-            leading=10,
+            "th_r", parent=base["Normal"], fontName="Onest", fontSize=7.5,
+            textColor=MUTED, alignment=TA_RIGHT, leading=10,
         ),
         "td": ParagraphStyle(
-            "td",
-            parent=base["Normal"],
-            fontName="Onest",
-            fontSize=10,
-            textColor=INK,
-            leading=14,
+            "td", parent=base["Normal"], fontName="Onest", fontSize=10.5,
+            textColor=INK, leading=15,
         ),
         "td_m": ParagraphStyle(
-            "td_m",
-            parent=base["Normal"],
-            fontName="OnestM",
-            fontSize=10,
-            textColor=INK,
-            leading=14,
+            "td_m", parent=base["Normal"], fontName="OnestM", fontSize=10.5,
+            textColor=INK, leading=15,
         ),
         "td_r": ParagraphStyle(
-            "td_r",
-            parent=base["Normal"],
-            fontName="OnestB",
-            fontSize=10,
-            textColor=INK,
-            alignment=TA_RIGHT,
-            leading=14,
+            "td_r", parent=base["Normal"], fontName="OnestB", fontSize=10.5,
+            textColor=INK, alignment=TA_RIGHT, leading=15,
         ),
         "name": ParagraphStyle(
-            "name",
-            parent=base["Normal"],
-            fontName="OnestB",
-            fontSize=12,
-            textColor=INK,
-            spaceBefore=3 * mm,
-            spaceAfter=2 * mm,
-            leading=16,
+            "name", parent=base["Normal"], fontName="OnestB", fontSize=12,
+            textColor=INK, spaceBefore=3 * mm, spaceAfter=2 * mm, leading=16,
         ),
         "body": ParagraphStyle(
-            "body",
-            parent=base["Normal"],
-            fontName="Onest",
-            fontSize=9.5,
-            textColor=INK,
-            leading=14.5,
-            spaceAfter=3 * mm,
+            "body", parent=base["Normal"], fontName="Onest", fontSize=9.5,
+            textColor=INK, leading=14.5, spaceAfter=3 * mm,
         ),
         "aroma": ParagraphStyle(
-            "aroma",
-            parent=base["Normal"],
-            fontName="OnestB",
-            fontSize=11,
-            textColor=INK,
-            spaceBefore=3 * mm,
-            spaceAfter=1.5 * mm,
-            leading=14,
+            "aroma", parent=base["Normal"], fontName="OnestB", fontSize=11,
+            textColor=INK, spaceBefore=3 * mm, spaceAfter=1.5 * mm, leading=14,
         ),
         "tech": ParagraphStyle(
-            "tech",
-            parent=base["Normal"],
-            fontName="OnestM",
-            fontSize=8.5,
-            textColor=ACCENT,
-            spaceAfter=1.5 * mm,
-            leading=12,
+            "tech", parent=base["Normal"], fontName="OnestM", fontSize=8.5,
+            textColor=ACCENT, spaceAfter=1.5 * mm, leading=12,
         ),
         "foot": ParagraphStyle(
-            "foot",
-            parent=base["Normal"],
-            fontName="Onest",
-            fontSize=8,
-            textColor=MUTED,
-            alignment=TA_CENTER,
-            spaceBefore=4 * mm,
-            leading=11,
+            "foot", parent=base["Normal"], fontName="Onest", fontSize=8,
+            textColor=MUTED, alignment=TA_CENTER, spaceBefore=4 * mm, leading=11,
+        ),
+        "page_tag": ParagraphStyle(
+            "page_tag", parent=base["Normal"], fontName="Onest", fontSize=8,
+            textColor=MUTED, alignment=TA_RIGHT, spaceAfter=4 * mm, leading=11,
         ),
     }
 
 
-def rule() -> HRFlowable:
+def rule(*, before=4 * mm, after=8 * mm) -> HRFlowable:
     return HRFlowable(
-        width="100%",
-        thickness=0.5,
-        color=RULE,
-        spaceBefore=3 * mm,
-        spaceAfter=6 * mm,
+        width="100%", thickness=0.5, color=RULE,
+        spaceBefore=before, spaceAfter=after,
     )
 
 
 def recipe_table(recipe: list[tuple[str, str, str]], s: dict) -> Table:
-    """Fixed tab stops: tech | guest | %"""
-    data = [
-        [
-            Paragraph("ТЕХН.", s["th"]),
-            Paragraph("ГОСТЮ", s["th"]),
-            Paragraph("%", s["th_r"]),
-        ]
-    ]
+    data = [[
+        Paragraph("ТЕХН.", s["th"]),
+        Paragraph("ГОСТЮ", s["th"]),
+        Paragraph("%", s["th_r"]),
+    ]]
     for tech, guest, pct in recipe:
-        data.append(
-            [
-                Paragraph(tech, s["td"]),
-                Paragraph(guest, s["td_m"]),
-                Paragraph(pct, s["td_r"]),
-            ]
-        )
+        data.append([
+            Paragraph(tech, s["td"]),
+            Paragraph(guest, s["td_m"]),
+            Paragraph(pct, s["td_r"]),
+        ])
 
-    # page content width ≈ 170mm with 20mm margins
-    col_widths = [55 * mm, 90 * mm, 25 * mm]
-    t = Table(data, colWidths=col_widths, hAlign="LEFT")
-    style_cmds = [
+    t = Table(data, colWidths=[55 * mm, 90 * mm, 25 * mm], hAlign="LEFT")
+    cmds = [
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 3),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 3),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
         ("LINEBELOW", (0, 0), (-1, 0), 0.4, RULE),
-        ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 7),
         ("TOPPADDING", (0, 0), (-1, 0), 2),
     ]
     for i in range(1, len(data)):
         if i % 2 == 1:
-            style_cmds.append(("BACKGROUND", (0, i), (-1, i), ROW))
-    t.setStyle(TableStyle(style_cmds))
+            cmds.append(("BACKGROUND", (0, i), (-1, i), ROW))
+    t.setStyle(TableStyle(cmds))
     return t
 
 
-def mix_block(mix: dict, s: dict) -> KeepTogether:
+def mix_block(mix: dict, s: dict, *, with_rule: bool = True) -> KeepTogether:
     head = Table(
-        [
-            [
-                Paragraph(mix["element"], s["el"]),
-                Paragraph(mix["title"], s["title"]),
-            ]
-        ],
+        [[Paragraph(mix["element"], s["el"]), Paragraph(mix["title"], s["title"])]],
         colWidths=[32 * mm, 138 * mm],
         hAlign="LEFT",
     )
-    head.setStyle(
-        TableStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-            ]
-        )
-    )
-    return KeepTogether(
-        [
-            Spacer(1, 2 * mm),
-            head,
-            Paragraph(mix["keys"], s["keys"]),
-            Paragraph(mix["story"], s["story"]),
-            recipe_table(mix["recipe"], s),
-            rule(),
-        ]
-    )
+    head.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    parts = [
+        Spacer(1, 3 * mm),
+        head,
+        Paragraph(mix["keys"], s["keys"]),
+        Paragraph(mix["story"], s["story"]),
+        recipe_table(mix["recipe"], s),
+    ]
+    if with_rule:
+        parts.append(rule(before=6 * mm, after=4 * mm))
+    else:
+        parts.append(Spacer(1, 4 * mm))
+    return KeepTogether(parts)
+
+
+def header_block(s: dict) -> list:
+    out = []
+    if LOGO.exists():
+        img = Image(str(LOGO), width=16 * mm, height=14 * mm)
+        img.hAlign = "CENTER"
+        out += [img, Spacer(1, 1.5 * mm)]
+    out += [
+        Paragraph("HOOKAHPLACE", s["brand"]),
+        Paragraph("Авторское меню", s["h1"]),
+        Paragraph("Огонь · Вода · Земля · Воздух", s["sub"]),
+        Paragraph("Сторитейлинг · составы · расшифровка ароматов", s["meta"]),
+        rule(before=1 * mm, after=5 * mm),
+    ]
+    return out
 
 
 def build(path: Path) -> None:
@@ -482,30 +387,29 @@ def build(path: Path) -> None:
         pagesize=A4,
         leftMargin=20 * mm,
         rightMargin=20 * mm,
-        topMargin=16 * mm,
-        bottomMargin=16 * mm,
+        topMargin=14 * mm,
+        bottomMargin=14 * mm,
         title="Аура · Авторское меню · Огонь Вода Земля Воздух",
         author="HookahPlace Aura / Solovev R.K.",
     )
 
     story: list = []
 
-    if LOGO.exists():
-        img = Image(str(LOGO), width=18 * mm, height=15.5 * mm)
-        img.hAlign = "CENTER"
-        story.append(img)
-        story.append(Spacer(1, 2 * mm))
+    # Page 1 — Огонь + Вода
+    story += header_block(s)
+    story.append(Paragraph("МИКСЫ  ·  1 / 2", s["sec"]))
+    story.append(mix_block(MIXES[0], s, with_rule=True))
+    story.append(mix_block(MIXES[1], s, with_rule=False))
+    story.append(PageBreak())
 
-    story.append(Paragraph("HOOKAHPLACE", s["brand"]))
-    story.append(Paragraph("Авторское меню", s["h1"]))
-    story.append(Paragraph("Огонь · Вода · Земля · Воздух", s["sub"]))
-    story.append(Paragraph("Сторитейлинг · составы · расшифровка ароматов", s["meta"]))
-    story.append(rule())
+    # Page 2 — Земля + Воздух
+    story.append(Paragraph("МИКСЫ  ·  2 / 2", s["sec"]))
+    story.append(Paragraph("aura  ·  авторское меню", s["page_tag"]))
+    story.append(mix_block(MIXES[2], s, with_rule=True))
+    story.append(mix_block(MIXES[3], s, with_rule=False))
+    story.append(PageBreak())
 
-    story.append(Paragraph("МИКСЫ", s["sec"]))
-    for mix in MIXES:
-        story.append(mix_block(mix, s))
-
+    # Page 3+ — names + aromas (kept from brief)
     story.append(Paragraph("ИМЕНА МИКСОВ", s["sec"]))
     for name, why in NAMES:
         story.append(Paragraph(name, s["name"]))
@@ -513,23 +417,19 @@ def build(path: Path) -> None:
 
     story.append(rule())
     story.append(Paragraph("АРОМАТЫ", s["sec"]))
-    story.append(
-        Paragraph(
-            "Гостевое имя → технический аромат → откуда слово и зачем так назвали.",
-            s["keys"],
-        )
-    )
+    story.append(Paragraph(
+        "Гостевое имя → технический аромат → откуда слово и зачем так назвали.",
+        s["keys"],
+    ))
     for guest, tech, why in AROMAS:
         story.append(Paragraph(f"«{guest}»", s["aroma"]))
         story.append(Paragraph(f"это  ·  {tech}", s["tech"]))
         story.append(Paragraph(why, s["body"]))
 
-    story.append(
-        Paragraph(
-            "Сделано Соловьевым Р.К.  ·  Made by Solovev R.K.  ·  hpaura.ru",
-            s["foot"],
-        )
-    )
+    story.append(Paragraph(
+        "Сделано Соловьевым Р.К.  ·  Made by Solovev R.K.  ·  hpaura.ru",
+        s["foot"],
+    ))
 
     def on_page(canvas, _doc):
         canvas.saveState()
@@ -539,10 +439,8 @@ def build(path: Path) -> None:
 
     doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
 
-    # compress
     try:
         import tempfile
-
         import pymupdf as fitz
 
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
