@@ -2,6 +2,7 @@ import { compare } from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { db } from "./db";
 import { ensureStash } from "./ensure";
 import { users } from "./schema";
@@ -16,7 +17,10 @@ export type SessionUser = {
 };
 
 function secret() {
-  const value = process.env.STASH_SESSION_SECRET || "dev-aura-stash-secret-change-me";
+  const value = process.env.STASH_SESSION_SECRET?.trim();
+  if (!value) {
+    throw new Error("STASH_SESSION_SECRET is not set");
+  }
   return new TextEncoder().encode(value);
 }
 
@@ -48,6 +52,7 @@ export async function destroySession() {
 }
 
 export async function getSession(): Promise<SessionUser | null> {
+  await connection();
   const jar = await cookies();
   const token = jar.get(COOKIE)?.value;
   if (!token) return null;

@@ -1,10 +1,12 @@
 import { and, eq } from "drizzle-orm";
+import { connection } from "next/server";
 import { getSession, type SessionUser } from "./auth";
 import { db } from "./db";
 import { ensureStash } from "./ensure";
 import { memberships, venues } from "./schema";
 
 export async function requireUser() {
+  await connection();
   await ensureStash();
   const user = await getSession();
   if (!user) return null;

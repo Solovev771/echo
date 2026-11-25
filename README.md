@@ -19,12 +19,7 @@
 - бренды → ароматы → остатки (г)
 - вход по email/паролю, 2 админа
 
-Локально: [http://127.0.0.1:3847/stash](http://127.0.0.1:3847/stash)
-
-Дефолтные админы (смените в `.env`):
-
-- `admin@hpaura.su` / `aura-admin-change-me`
-- `admin2@hpaura.su` / `aura-admin2-change-me`
+Локально: скопируйте `.env.example` → `.env`, задайте секреты и админов, затем откройте [http://127.0.0.1:3847/stash](http://127.0.0.1:3847/stash).
 
 ### Выкат на Vercel + домен `hpaura.su`
 

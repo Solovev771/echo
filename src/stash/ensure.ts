@@ -112,19 +112,25 @@ async function seed() {
     order += 1;
   }
 
-  const adminEmail = (process.env.STASH_ADMIN_EMAIL || "admin@hpaura.su").toLowerCase();
-  const adminPass = process.env.STASH_ADMIN_PASSWORD || "aura-admin-change-me";
-  const admin2Email = (process.env.STASH_ADMIN2_EMAIL || "admin2@hpaura.su").toLowerCase();
-  const admin2Pass = process.env.STASH_ADMIN2_PASSWORD || "aura-admin2-change-me";
-
-  const admins = [
-    { email: adminEmail, name: "Админ", password: adminPass },
-    { email: admin2Email, name: "Админ 2", password: admin2Pass },
-  ];
+  const adminSpecs = [
+    {
+      email: process.env.STASH_ADMIN_EMAIL?.trim().toLowerCase(),
+      password: process.env.STASH_ADMIN_PASSWORD,
+      name: "Админ",
+    },
+    {
+      email: process.env.STASH_ADMIN2_EMAIL?.trim().toLowerCase(),
+      password: process.env.STASH_ADMIN2_PASSWORD,
+      name: "Админ 2",
+    },
+  ].filter(
+    (a): a is { email: string; password: string; name: string } =>
+      Boolean(a.email && a.password),
+  );
 
   const allVenues = await database.query.venues.findMany();
 
-  for (const admin of admins) {
+  for (const admin of adminSpecs) {
     let user = await database.query.users.findFirst({
       where: eq(users.email, admin.email),
     });
