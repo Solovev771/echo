@@ -1,24 +1,29 @@
 import type { Metadata } from "next";
-import { Montserrat, Literata } from "next/font/google";
+import localFont from "next/font/local";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
-const display = Montserrat({
-  subsets: ["latin", "latin-ext", "cyrillic"],
+const display = localFont({
+  src: [
+    { path: "../../assets/fonts/Onest-Regular.ttf", weight: "400" },
+    { path: "../../assets/fonts/Onest-Medium.ttf", weight: "500" },
+    { path: "../../assets/fonts/Onest-SemiBold.ttf", weight: "600" },
+    { path: "../../assets/fonts/Onest-Bold.ttf", weight: "700" },
+  ],
   variable: "--font-display",
-  weight: ["400", "500", "600", "700"],
 });
 
-const body = Montserrat({
-  subsets: ["latin", "latin-ext", "cyrillic"],
+const body = localFont({
+  src: [
+    { path: "../../assets/fonts/Onest-Regular.ttf", weight: "400" },
+    { path: "../../assets/fonts/Onest-Medium.ttf", weight: "500" },
+  ],
   variable: "--font-body",
-  weight: ["300", "400", "500"],
 });
 
-const story = Literata({
-  subsets: ["latin", "latin-ext", "cyrillic"],
+const story = localFont({
+  src: [{ path: "../../assets/fonts/CoFoRobert-RegularIt.ttf", weight: "400", style: "italic" }],
   variable: "--font-story",
-  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {

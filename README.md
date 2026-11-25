@@ -11,6 +11,37 @@
   - [`docs/AURA_Special_miksy.docx`](docs/AURA_Special_miksy.docx) (+ PDF)
 - Генераторы: `scripts/build-concept-doc.py`, `scripts/build-mixes-doc.py`
 
+## Склад (`/stash`)
+
+Склад табака в стиле Ауры (как The Stash, без смен/отчётов/таймеров):
+
+- 2 точки: Широкая и Стрекалова
+- бренды → ароматы → остатки (г)
+- вход по email/паролю, 2 админа
+
+Локально: [http://127.0.0.1:3847/stash](http://127.0.0.1:3847/stash)
+
+Дефолтные админы (смените в `.env`):
+
+- `admin@hpaura.su` / `aura-admin-change-me`
+- `admin2@hpaura.su` / `aura-admin2-change-me`
+
+### Выкат на Vercel + домен `hpaura.su`
+
+1. Создай бесплатную БД [Turso](https://turso.tech) → скопируй `TURSO_DATABASE_URL` и `TURSO_AUTH_TOKEN`
+2. В Vercel: **Add New Project** → подключи этот репозиторий (через GitHub-зеркало Origin или CLI `npx vercel`)
+3. Environment Variables в Vercel:
+   - `TURSO_DATABASE_URL`
+   - `TURSO_AUTH_TOKEN`
+   - `STASH_SESSION_SECRET` (длинная случайная строка)
+   - `STASH_ADMIN_EMAIL` / `STASH_ADMIN_PASSWORD`
+   - `STASH_ADMIN2_EMAIL` / `STASH_ADMIN2_PASSWORD`
+4. Deploy
+5. Domains → добавь `hpaura.su` и `www.hpaura.su`
+6. У регистратора домена укажи DNS-записи, которые покажет Vercel (обычно A/CNAME)
+
+Склад откроется как `https://hpaura.su/stash`.
+
 ## Запуск
 
 ```bash
