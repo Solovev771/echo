@@ -24,8 +24,18 @@ function secret() {
   return new TextEncoder().encode(value);
 }
 
-export async function createSession(user: SessionUser) {
-  const token = await new SignJWT({
+export function sessionCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  };
+}
+
+export async function createSessionToken(user: SessionUser) {
+  return new SignJWT({
     id: user.id,
     email: user.email,
     name: user.name,
@@ -35,16 +45,16 @@ export async function createSession(user: SessionUser) {
     .setIssuedAt()
     .setExpirationTime("30d")
     .sign(secret());
-
-  const jar = await cookies();
-  jar.set(COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  });
 }
+
+/** @deprecated prefer createSessionToken + Set-Cookie on the response */
+export async function createSession(user: SessionUser) {
+  const token = await createSessionToken(user);
+  const jar = await cookies();
+  jar.set(COOKIE, token, sessionCookieOptions());
+}
+
+export { COOKIE as SESSION_COOKIE };
 
 export async function destroySession() {
   const jar = await cookies();
@@ -85,12 +95,10 @@ export async function login(email: string, password: string) {
   if (!user) return null;
   const ok = await compare(password, user.passwordHash);
   if (!ok) return null;
-  const session: SessionUser = {
+  return {
     id: user.id,
     email: user.email,
     name: user.name,
     role: user.role as "admin" | "staff",
-  };
-  await createSession(session);
-  return session;
+  } satisfies SessionUser;
 }
