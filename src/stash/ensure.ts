@@ -1,4 +1,4 @@
-import { hash } from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db, raw } from "./db";
 import { id } from "./ids";
@@ -147,6 +147,18 @@ async function seed() {
       user = await database.query.users.findFirst({
         where: eq(users.id, userId),
       });
+    } else {
+      const matches = await compare(admin.password, user.passwordHash);
+      if (!matches || user.role !== "admin") {
+        await database
+          .update(users)
+          .set({
+            passwordHash: await hash(admin.password, 10),
+            role: "admin",
+            name: admin.name,
+          })
+          .where(eq(users.id, user.id));
+      }
     }
     if (!user) continue;
     for (const venue of allVenues) {
