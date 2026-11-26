@@ -7,13 +7,21 @@ import { db } from "./db";
 import { ensureStash } from "./ensure";
 import { users } from "./schema";
 
-const COOKIE = "aura_stash_session";
+export const STASH_COOKIE = "aura_stash_session";
 
 export type SessionUser = {
   id: string;
   email: string;
   name: string;
   role: "admin" | "staff";
+};
+
+export const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+  maxAge: 60 * 60 * 24 * 30,
 };
 
 function secret() {
@@ -24,17 +32,8 @@ function secret() {
   return new TextEncoder().encode(value);
 }
 
-export function sessionCookieOptions() {
-  return {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  };
-}
-
-export async function createSessionToken(user: SessionUser) {
+export async function signSessionToken(user: SessionUser) {
+  await connection();
   return new SignJWT({
     id: user.id,
     email: user.email,
@@ -47,24 +46,22 @@ export async function createSessionToken(user: SessionUser) {
     .sign(secret());
 }
 
-/** @deprecated prefer createSessionToken + Set-Cookie on the response */
 export async function createSession(user: SessionUser) {
-  const token = await createSessionToken(user);
+  const token = await signSessionToken(user);
   const jar = await cookies();
-  jar.set(COOKIE, token, sessionCookieOptions());
+  jar.set(STASH_COOKIE, token, SESSION_COOKIE_OPTIONS);
 }
 
-export { COOKIE as SESSION_COOKIE };
-
 export async function destroySession() {
+  await connection();
   const jar = await cookies();
-  jar.delete(COOKIE);
+  jar.delete(STASH_COOKIE);
 }
 
 export async function getSession(): Promise<SessionUser | null> {
   await connection();
   const jar = await cookies();
-  const token = jar.get(COOKIE)?.value;
+  const token = jar.get(STASH_COOKIE)?.value;
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret());
@@ -88,6 +85,7 @@ export async function getSession(): Promise<SessionUser | null> {
 }
 
 export async function login(email: string, password: string) {
+  await connection();
   await ensureStash();
   const user = await db().query.users.findFirst({
     where: eq(users.email, email.toLowerCase().trim()),
@@ -95,10 +93,12 @@ export async function login(email: string, password: string) {
   if (!user) return null;
   const ok = await compare(password, user.passwordHash);
   if (!ok) return null;
-  return {
+  const session: SessionUser = {
     id: user.id,
     email: user.email,
     name: user.name,
     role: user.role as "admin" | "staff",
-  } satisfies SessionUser;
+  };
+  const token = await signSessionToken(session);
+  return { user: session, token };
 }

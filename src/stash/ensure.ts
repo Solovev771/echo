@@ -1,5 +1,6 @@
 import { compare, hash } from "bcryptjs";
 import { eq } from "drizzle-orm";
+import { connection } from "next/server";
 import { db, raw } from "./db";
 import { id } from "./ids";
 import { brands, memberships, users, venues } from "./schema";
@@ -177,11 +178,17 @@ async function seed() {
   }
 }
 
-export function ensureStash() {
+export async function ensureStash() {
+  await connection();
   if (!ready) {
     ready = (async () => {
-      await migrate();
-      await seed();
+      try {
+        await migrate();
+        await seed();
+      } catch (err) {
+        ready = null;
+        throw err;
+      }
     })();
   }
   return ready;
