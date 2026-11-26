@@ -30,7 +30,7 @@ export default async function StashHomePage() {
           <Link
             key={venue.id}
             href={`/stash/${venue.slug}`}
-            className="block rounded-2xl border border-white/10 bg-black/35 px-4 py-4 transition hover:border-[var(--aura-amber)]/50"
+            className="block rounded-xl border border-white/10 bg-black/35 px-4 py-4 transition hover:border-[var(--aura-amber)]/50"
           >
             <div className="text-lg font-medium">{venue.name}</div>
             <div className="mt-1 text-sm text-[var(--aura-muted)]">{venue.address}</div>

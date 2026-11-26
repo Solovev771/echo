@@ -49,7 +49,7 @@ export default function StashLoginPage() {
       <h1 className="mb-1 text-center text-3xl font-semibold tracking-tight">aura</h1>
       <p className="mb-8 text-center text-sm text-[var(--aura-muted)]">Склад · вход</p>
 
-      <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur">
+      <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-white/10 bg-black/40 p-5 backdrop-blur">
         <label className="block space-y-1.5">
           <span className="text-xs text-[var(--aura-muted)]">Email</span>
           <input

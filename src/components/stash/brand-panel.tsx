@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { LOW_STOCK_GRAMS } from "@/stash/stock-summary";
 
 type FlavorRow = {
   id: string;
@@ -75,7 +76,7 @@ export function BrandPanel({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="space-y-2">
         <h2 className="text-xs tracking-wider text-[var(--aura-muted)] uppercase">
           {brandName}
@@ -84,7 +85,7 @@ export function BrandPanel({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Поиск аромата"
-          className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-3 text-sm outline-none focus:border-[var(--aura-amber)]"
+          className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm outline-none focus:border-[var(--aura-amber)]"
         />
       </div>
 
@@ -94,12 +95,12 @@ export function BrandPanel({
           onChange={(e) => setName(e.target.value)}
           placeholder="Новый аромат"
           required
-          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-black/40 px-3 py-3 text-sm outline-none focus:border-[var(--aura-amber)]"
+          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm outline-none focus:border-[var(--aura-amber)]"
         />
         <button
           type="submit"
           disabled={busy === "add"}
-          className="rounded-xl bg-[var(--aura-glow)] px-4 text-sm font-medium text-black disabled:opacity-60"
+          className="shrink-0 rounded-xl bg-[var(--aura-glow)] px-4 py-2.5 text-sm font-medium text-black disabled:opacity-60"
         >
           +
         </button>
@@ -107,29 +108,28 @@ export function BrandPanel({
 
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/35">
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-black/35">
         {flavors.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-[var(--aura-muted)]">
+          <p className="px-4 py-5 text-sm text-[var(--aura-muted)]">
             Пока пусто — добавьте аромат.
           </p>
         ) : (
           flavors.map((flavor, i) => (
             <div
               key={flavor.id}
-              className={`flex items-center gap-3 px-3 py-3 ${
+              className={`flex items-center gap-3 px-3 py-2 ${
                 i > 0 ? "border-t border-white/8" : ""
               }`}
             >
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm">{flavor.name}</div>
-                <div className="text-xs text-[var(--aura-muted)]">{flavor.grams} г</div>
-              </div>
-              <div className="flex items-center gap-1.5">
+              <div className="min-w-0 flex-1 truncate text-sm">{flavor.name}</div>
+              <GramsBadge grams={flavor.grams} />
+              <div className="flex shrink-0 items-center gap-1">
                 <button
                   type="button"
                   disabled={busy === flavor.id}
                   onClick={() => adjust(flavor.id, -20)}
-                  className="h-9 w-9 rounded-lg border border-white/15 text-sm"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 text-sm disabled:opacity-50"
+                  aria-label="Убрать 20 г"
                 >
                   −
                 </button>
@@ -137,9 +137,10 @@ export function BrandPanel({
                   type="button"
                   disabled={busy === flavor.id}
                   onClick={() => adjust(flavor.id, 50)}
-                  className="h-9 rounded-lg border border-[var(--aura-amber)]/40 px-2.5 text-xs text-[var(--aura-amber)]"
+                  className="flex h-8 items-center justify-center rounded-lg border border-[var(--aura-amber)]/40 px-2 text-xs text-[var(--aura-amber)] disabled:opacity-50"
+                  aria-label="Добавить 50 г"
                 >
-                  +50г
+                  +50
                 </button>
               </div>
             </div>
@@ -147,5 +148,23 @@ export function BrandPanel({
         )}
       </div>
     </div>
+  );
+}
+
+function GramsBadge({ grams }: { grams: number }) {
+  const low = grams > 0 && grams < LOW_STOCK_GRAMS;
+  const empty = grams <= 0;
+  return (
+    <span
+      className={`shrink-0 rounded-md px-2 py-0.5 text-xs tabular-nums ${
+        empty
+          ? "bg-white/5 text-[var(--aura-muted)]"
+          : low
+            ? "bg-[var(--aura-amber)]/20 text-[var(--aura-amber)]"
+            : "bg-white/10 text-[var(--aura-white)]"
+      }`}
+    >
+      {grams.toLocaleString("ru-RU")} г
+    </span>
   );
 }

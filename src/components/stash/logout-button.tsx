@@ -7,7 +7,7 @@ export function LogoutButton() {
   return (
     <button
       type="button"
-      className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-[var(--aura-muted)]"
+      className="rounded-xl border border-white/15 px-3 py-1.5 text-xs text-[var(--aura-muted)]"
       onClick={async () => {
         await fetch("/api/stash/logout", { method: "POST" });
         router.replace("/stash/login");
