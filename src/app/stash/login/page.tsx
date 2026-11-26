@@ -20,7 +20,14 @@ export default function StashLoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = (await res.json()) as { ok?: boolean; error?: string };
+      const raw = await res.text();
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = raw ? (JSON.parse(raw) as { ok?: boolean; error?: string }) : {};
+      } catch {
+        setError("Сервер вернул ошибку. Обновите страницу и попробуйте снова.");
+        return;
+      }
       if (!res.ok) {
         setError(data.error || "Не удалось войти");
         return;
@@ -28,7 +35,7 @@ export default function StashLoginPage() {
       router.replace("/stash");
       router.refresh();
     } catch {
-      setError("Сеть недоступна");
+      setError("Не удалось связаться с сервером. Проверьте интернет и обновите страницу.");
     } finally {
       setLoading(false);
     }
