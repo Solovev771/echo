@@ -29,7 +29,7 @@ export function StatCard({
         <Icon className="size-4.5" aria-hidden />
       </span>
       <span className="w-full min-w-0 flex-1">
-        <span className="block truncate text-[10px] font-medium tracking-[0.1em] text-[var(--aura-muted)] uppercase sm:tracking-[0.14em]">
+        <span className="block text-[10px] leading-tight font-medium tracking-[0.04em] text-balance break-words text-[var(--aura-muted)] uppercase min-[380px]:tracking-[0.1em] sm:truncate sm:tracking-[0.14em]">
           {label}
         </span>
         <span className="block truncate text-base font-semibold tabular-nums leading-tight sm:text-lg">

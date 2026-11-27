@@ -1,8 +1,8 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import type { SessionUser } from "./auth";
-import { db } from "./db";
+import { db, raw } from "./db";
 import { id } from "./ids";
-import { brands, movements, stock, type MovementKind } from "./schema";
+import { brands, movements, type MovementKind } from "./schema";
 
 type FlavorRef = { id: string; name: string; brandId: string };
 
@@ -62,38 +62,60 @@ export async function applyStockChange({
   setGrams?: number;
   note?: string | null;
 }) {
-  const row = await db().query.stock.findFirst({
-    where: and(eq(stock.venueId, venueId), eq(stock.flavorId, flavor.id)),
-  });
-  const before = row?.grams ?? 0;
-  const after =
-    setGrams !== undefined ? Math.max(0, setGrams) : Math.max(0, before + (deltaGrams ?? 0));
-  const now = new Date();
-
-  if (!row) {
-    await db().insert(stock).values({
-      id: id("st"),
-      venueId,
-      flavorId: flavor.id,
-      grams: after,
-      updatedAt: now,
-    });
-  } else {
-    await db().update(stock).set({ grams: after, updatedAt: now }).where(eq(stock.id, row.id));
-  }
-
   const kind: MovementKind =
     setGrams !== undefined ? "set" : (deltaGrams ?? 0) >= 0 ? "in" : "out";
-  await recordMovement({
-    venueId,
-    flavor,
-    user,
-    kind,
-    delta: after - before,
-    gramsAfter: after,
-    note,
-  });
+  const brandName = await brandNameFor(flavor.brandId);
+  const now = Date.now();
+  const movementId = id("mv");
+  const nextExpr = setGrams !== undefined ? "MAX(0, ?)" : "MAX(0, grams + ?)";
+  const amount = setGrams !== undefined ? setGrams : (deltaGrams ?? 0);
+  const where = "venue_id = ? AND flavor_id = ?";
 
+  // One write transaction: concurrent changes from several phones must not
+  // overwrite each other (read-then-write loses updates over Turso's network).
+  const results = await raw().batch(
+    [
+      {
+        sql: `INSERT INTO stock (id, venue_id, flavor_id, grams, updated_at)
+              VALUES (?, ?, ?, 0, ?) ON CONFLICT(venue_id, flavor_id) DO NOTHING`,
+        args: [id("st"), venueId, flavor.id, now],
+      },
+      {
+        sql: `INSERT INTO movements (id, venue_id, flavor_id, flavor_name, brand_id, brand_name,
+                user_id, user_name, kind, delta, grams_after, note, created_at)
+              SELECT ?, venue_id, flavor_id, ?, ?, ?, ?, ?, ?, ${nextExpr} - grams, ${nextExpr}, ?, ?
+              FROM stock WHERE ${where}`,
+        args: [
+          movementId,
+          flavor.name,
+          flavor.brandId,
+          brandName,
+          user.id,
+          user.name,
+          kind,
+          amount,
+          amount,
+          note?.trim() || null,
+          now,
+          venueId,
+          flavor.id,
+        ],
+      },
+      {
+        sql: `UPDATE stock SET grams = ${nextExpr}, updated_at = ? WHERE ${where}`,
+        args: [amount, now, venueId, flavor.id],
+      },
+      {
+        sql: "SELECT delta, grams_after FROM movements WHERE id = ?",
+        args: [movementId],
+      },
+    ],
+    "write",
+  );
+
+  const journal = results[3].rows[0];
+  const after = Number(journal?.grams_after ?? 0);
+  const before = after - Number(journal?.delta ?? 0);
   return { before, after, kind };
 }
 
