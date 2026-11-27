@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Package, Scale } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BrandMenu } from "@/components/stash/brand-admin";
 import { BrandPanel } from "@/components/stash/brand-panel";
 import { StatCard } from "@/components/stash/stat-card";
 import { requireVenueAccess } from "@/stash/access";
@@ -15,7 +16,7 @@ export default async function BrandPage({
   params: Promise<{ venue: string; brand: string }>;
 }) {
   const { venue: slug, brand: brandId } = await params;
-  const { venue } = await requireVenueAccess(slug);
+  const { user, venue } = await requireVenueAccess(slug);
 
   const allBrands = await db().query.brands.findMany({
     orderBy: [asc(brands.sortOrder), asc(brands.name)],
@@ -54,6 +55,13 @@ export default async function BrandPage({
             Склад
           </Link>
           <div className="flex gap-1.5">
+            {user.role === "admin" ? (
+              <BrandMenu
+                venueSlug={slug}
+                brand={{ id: brand.id, name: brand.name }}
+                flavorCount={rows.length}
+              />
+            ) : null}
             <BrandArrow
               href={prev ? `/stash/${slug}/${prev.id}` : null}
               label={prev ? `Предыдущий бренд: ${prev.name}` : "Нет предыдущего"}
