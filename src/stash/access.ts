@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { getSession, type SessionUser } from "./auth";
 import { db } from "./db";
@@ -24,6 +25,14 @@ export async function canAccessVenue(user: SessionUser, venueId: string) {
 export async function getVenueBySlug(slug: string) {
   await ensureStash();
   return db().query.venues.findFirst({ where: eq(venues.slug, slug) });
+}
+
+export async function requireVenueAccess(slug: string) {
+  const user = await requireUser();
+  if (!user) redirect("/stash/login");
+  const venue = await getVenueBySlug(slug);
+  if (!venue || !(await canAccessVenue(user, venue.id))) redirect("/stash");
+  return { user, venue };
 }
 
 export async function listVenuesForUser(user: SessionUser) {

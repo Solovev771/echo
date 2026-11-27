@@ -46,7 +46,7 @@ export default function StashLoginPage() {
       <p className="mb-2 text-center text-[11px] tracking-[0.28em] text-[var(--aura-amber)] uppercase">
         HookahPlace
       </p>
-      <h1 className="mb-1 text-center text-3xl font-semibold tracking-tight">aura</h1>
+      <h1 className="mb-1 text-center text-3xl font-semibold tracking-[0.2em]">AURA</h1>
       <p className="mb-8 text-center text-sm text-[var(--aura-muted)]">Склад · вход</p>
 
       <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-white/10 bg-black/40 p-5 backdrop-blur">
@@ -58,7 +58,7 @@ export default function StashLoginPage() {
             autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-sm outline-none focus:border-[var(--aura-amber)]"
+            className="w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-base outline-none md:text-sm focus:border-[var(--aura-amber)]"
           />
         </label>
         <label className="block space-y-1.5">
@@ -69,14 +69,14 @@ export default function StashLoginPage() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-sm outline-none focus:border-[var(--aura-amber)]"
+            className="w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-base outline-none md:text-sm focus:border-[var(--aura-amber)]"
           />
         </label>
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl bg-[var(--aura-glow)] px-3 py-3 text-sm font-medium text-black disabled:opacity-60"
+          className="w-full rounded-xl bg-[var(--aura-glow)] px-3 py-3 text-sm font-semibold text-black transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
         >
           {loading ? "Входим…" : "Войти"}
         </button>

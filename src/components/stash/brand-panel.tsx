@@ -1,8 +1,11 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { LOW_STOCK_GRAMS } from "@/stash/stock-summary";
+import { SearchInput } from "@/components/stash/brand-table";
+import { StockBadge, StockStepper, useStockAdjust } from "@/components/stash/stock-controls";
+import { stockLevel, type StockLevel } from "@/stash/stock-level";
 
 type FlavorRow = {
   id: string;
@@ -10,161 +13,167 @@ type FlavorRow = {
   grams: number;
 };
 
+type Filter = "all" | Exclude<StockLevel, "ok">;
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: "all", label: "Все" },
+  { key: "low", label: "Мало" },
+  { key: "out", label: "Нет" },
+];
+
 export function BrandPanel({
   venueSlug,
   brandId,
-  brandName,
   initialFlavors,
 }: {
   venueSlug: string;
   brandId: string;
-  brandName: string;
   initialFlavors: FlavorRow[];
 }) {
   const router = useRouter();
   const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
   const [name, setName] = useState("");
-  const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState("");
+  const { adjust, busy, error } = useStockAdjust(venueSlug);
+
+  const counts = useMemo(() => {
+    const c = { all: initialFlavors.length, low: 0, out: 0 };
+    for (const f of initialFlavors) {
+      const level = stockLevel(f.grams);
+      if (level !== "ok") c[level] += 1;
+    }
+    return c;
+  }, [initialFlavors]);
 
   const flavors = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    if (!needle) return initialFlavors;
-    return initialFlavors.filter((f) => f.name.toLowerCase().includes(needle));
-  }, [initialFlavors, q]);
+    return initialFlavors.filter(
+      (f) =>
+        (filter === "all" || stockLevel(f.grams) === filter) &&
+        (!needle || f.name.toLowerCase().includes(needle)),
+    );
+  }, [initialFlavors, q, filter]);
 
   async function addFlavor(e: React.FormEvent) {
     e.preventDefault();
-    setBusy("add");
-    setError("");
+    setAdding(true);
+    setAddError("");
     try {
       const res = await fetch("/api/stash/flavors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ venueSlug, brandId, name }),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setError(data.error || "Не удалось добавить");
+        setAddError(data.error || "Не удалось добавить");
         return;
       }
       setName("");
       router.refresh();
+    } catch {
+      setAddError("Нет связи с сервером");
     } finally {
-      setBusy(null);
-    }
-  }
-
-  async function adjust(flavorId: string, delta: number) {
-    setBusy(flavorId);
-    setError("");
-    try {
-      const res = await fetch("/api/stash/stock", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ venueSlug, flavorId, deltaGrams: delta }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        setError(data.error || "Ошибка остатка");
-        return;
-      }
-      router.refresh();
-    } finally {
-      setBusy(null);
+      setAdding(false);
     }
   }
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <h2 className="text-xs tracking-wider text-[var(--aura-muted)] uppercase">
-          {brandName}
-        </h2>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Поиск аромата"
-          className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm outline-none focus:border-[var(--aura-amber)]"
-        />
-      </div>
-
-      <form onSubmit={addFlavor} className="flex gap-2">
+      <form
+        onSubmit={addFlavor}
+        className="flex gap-2 rounded-2xl border border-white/10 bg-[#121110]/85 p-3"
+      >
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Новый аромат"
           required
-          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm outline-none focus:border-[var(--aura-amber)]"
+          maxLength={120}
+          enterKeyHint="done"
+          className="h-11 min-w-0 flex-1 rounded-xl border border-white/12 bg-black/40 px-3 text-base outline-none placeholder:text-[var(--aura-muted)]/70 focus:border-[var(--aura-amber)] md:h-10 md:text-sm"
         />
         <button
           type="submit"
-          disabled={busy === "add"}
-          className="shrink-0 rounded-xl bg-[var(--aura-glow)] px-4 py-2.5 text-sm font-medium text-black disabled:opacity-60"
+          disabled={adding || !name.trim()}
+          className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-[var(--aura-glow)] px-4 text-sm font-semibold text-black transition hover:brightness-110 active:scale-95 disabled:opacity-50 md:h-10"
         >
-          +
+          <Plus className="size-4" aria-hidden />
+          <span className="hidden sm:inline">{adding ? "Добавляю…" : "Добавить"}</span>
         </button>
       </form>
+      {addError ? <p className="text-sm text-red-400">{addError}</p> : null}
 
-      {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#121110]/85">
+        <div className="flex flex-col gap-3 border-b border-white/8 p-3 md:flex-row md:items-center md:justify-between md:p-4">
+          <SearchInput value={q} onChange={setQ} placeholder="Поиск аромата" />
+          <div className="flex gap-1.5" role="tablist" aria-label="Фильтр остатков">
+            {FILTERS.map((f) => {
+              const active = filter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setFilter(f.key)}
+                  className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-sm transition md:flex-none ${
+                    active
+                      ? "bg-[var(--aura-amber)]/20 text-[#f0a65a] ring-1 ring-inset ring-[var(--aura-amber)]/40"
+                      : "bg-white/5 text-[var(--aura-white)]/75 hover:bg-white/10"
+                  }`}
+                >
+                  {f.label}
+                  <span className="text-xs tabular-nums opacity-70">{counts[f.key]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-      <div className="overflow-hidden rounded-xl border border-white/10 bg-black/35">
+        {error ? <p className="px-4 pt-3 text-sm text-red-400">{error}</p> : null}
+
         {flavors.length === 0 ? (
-          <p className="px-4 py-5 text-sm text-[var(--aura-muted)]">
-            Пока пусто — добавьте аромат.
+          <p className="px-4 py-8 text-center text-sm text-[var(--aura-muted)]">
+            {initialFlavors.length === 0
+              ? "Ароматов пока нет — добавьте первый выше."
+              : "Под фильтр ничего не попало."}
           </p>
         ) : (
-          flavors.map((flavor, i) => (
-            <div
-              key={flavor.id}
-              className={`flex items-center gap-3 px-3 py-2 ${
-                i > 0 ? "border-t border-white/8" : ""
-              }`}
-            >
-              <div className="min-w-0 flex-1 truncate text-sm">{flavor.name}</div>
-              <GramsBadge grams={flavor.grams} />
-              <div className="flex shrink-0 items-center gap-1">
-                <button
-                  type="button"
-                  disabled={busy === flavor.id}
-                  onClick={() => adjust(flavor.id, -20)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 text-sm disabled:opacity-50"
-                  aria-label="Убрать 20 г"
-                >
-                  −
-                </button>
-                <button
-                  type="button"
-                  disabled={busy === flavor.id}
-                  onClick={() => adjust(flavor.id, 50)}
-                  className="flex h-8 items-center justify-center rounded-lg border border-[var(--aura-amber)]/40 px-2 text-xs text-[var(--aura-amber)] disabled:opacity-50"
-                  aria-label="Добавить 50 г"
-                >
-                  +50
-                </button>
-              </div>
+          <>
+            <div className="hidden grid-cols-[minmax(0,1fr)_6rem_auto] gap-4 px-4 pt-3 pb-2 text-[11px] tracking-[0.12em] text-[var(--aura-muted)] uppercase md:grid">
+              <span>Аромат</span>
+              <span className="text-center">Остаток</span>
+              <span className="w-[6.5rem] text-right">Изменить</span>
             </div>
-          ))
+            <ul>
+              {flavors.map((flavor) => (
+                <li
+                  key={flavor.id}
+                  className="flex items-center gap-3 border-t border-white/6 px-4 py-2.5 transition hover:bg-white/[0.03] md:grid md:grid-cols-[minmax(0,1fr)_6rem_auto] md:gap-4"
+                >
+                  <span className="line-clamp-2 min-w-0 flex-1 text-sm font-medium break-words md:truncate">
+                    {flavor.name}
+                  </span>
+                  <span className="md:text-center">
+                    <StockBadge grams={flavor.grams} />
+                  </span>
+                  <StockStepper
+                    disabled={busy === flavor.id}
+                    onAdjust={(delta) => adjust(flavor.id, delta)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </>
         )}
-      </div>
-    </div>
-  );
-}
 
-function GramsBadge({ grams }: { grams: number }) {
-  const low = grams > 0 && grams < LOW_STOCK_GRAMS;
-  const empty = grams <= 0;
-  return (
-    <span
-      className={`shrink-0 rounded-md px-2 py-0.5 text-xs tabular-nums ${
-        empty
-          ? "bg-white/5 text-[var(--aura-muted)]"
-          : low
-            ? "bg-[var(--aura-amber)]/20 text-[var(--aura-amber)]"
-            : "bg-white/10 text-[var(--aura-white)]"
-      }`}
-    >
-      {grams.toLocaleString("ru-RU")} г
-    </span>
+        <div className="border-t border-white/8 px-4 py-3 text-xs text-[var(--aura-muted)]">
+          Показано: {flavors.length} из {initialFlavors.length}
+        </div>
+      </section>
+    </div>
   );
 }

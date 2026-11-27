@@ -1,10 +1,13 @@
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
+import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Package, Scale } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BrandPanel } from "@/components/stash/brand-panel";
-import { canAccessVenue, getVenueBySlug, requireUser } from "@/stash/access";
+import { StatCard } from "@/components/stash/stat-card";
+import { requireVenueAccess } from "@/stash/access";
 import { db } from "@/stash/db";
 import { brands, flavors, stock } from "@/stash/schema";
+import { formatGrams, stockLevel } from "@/stash/stock-summary";
 
 export default async function BrandPage({
   params,
@@ -12,47 +15,102 @@ export default async function BrandPage({
   params: Promise<{ venue: string; brand: string }>;
 }) {
   const { venue: slug, brand: brandId } = await params;
-  const user = await requireUser();
-  if (!user) redirect("/stash/login");
+  const { venue } = await requireVenueAccess(slug);
 
-  const venue = await getVenueBySlug(slug);
-  if (!venue) redirect("/stash");
-  if (!(await canAccessVenue(user, venue.id))) redirect("/stash");
+  const allBrands = await db().query.brands.findMany({
+    orderBy: [asc(brands.sortOrder), asc(brands.name)],
+  });
+  const index = allBrands.findIndex((b) => b.id === brandId);
+  if (index === -1) redirect(`/stash/${slug}`);
+  const brand = allBrands[index];
+  const prev = allBrands[index - 1] ?? null;
+  const next = allBrands[index + 1] ?? null;
 
-  const brand = await db().query.brands.findFirst({
-    where: eq(brands.id, brandId),
-  });
-  if (!brand) redirect(`/stash/${slug}`);
-
-  const flavorRows = await db().query.flavors.findMany({
-    where: eq(flavors.brandId, brand.id),
-    orderBy: [asc(flavors.name)],
-  });
-  const stockRows = await db().query.stock.findMany({
-    where: and(eq(stock.venueId, venue.id)),
-  });
+  const [flavorRows, stockRows] = await Promise.all([
+    db().query.flavors.findMany({
+      where: eq(flavors.brandId, brand.id),
+      orderBy: [asc(flavors.name)],
+    }),
+    db().query.stock.findMany({ where: eq(stock.venueId, venue.id) }),
+  ]);
   const gramsByFlavor = new Map(stockRows.map((s) => [s.flavorId, s.grams]));
+  const rows = flavorRows.map((f) => ({
+    id: f.id,
+    name: f.name,
+    grams: gramsByFlavor.get(f.id) ?? 0,
+  }));
+  const totalGrams = rows.reduce((sum, r) => sum + r.grams, 0);
+  const attention = rows.filter((r) => stockLevel(r.grams) !== "ok").length;
 
   return (
-    <div className="space-y-5">
-      <header className="space-y-2">
-        <Link href={`/stash/${slug}`} className="text-xs text-[var(--aura-muted)]">
-          ← Бренды
-        </Link>
-        <h1 className="text-2xl font-semibold">{brand.name}</h1>
-        <p className="text-sm text-[var(--aura-muted)]">{venue.name}</p>
+    <div className="space-y-5 md:space-y-6">
+      <header className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <Link
+            href={`/stash/${slug}`}
+            className="-ml-2 flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm text-[var(--aura-muted)] transition hover:text-[var(--aura-white)]"
+          >
+            <ArrowLeft className="size-4" aria-hidden />
+            Склад
+          </Link>
+          <div className="flex gap-1.5">
+            <BrandArrow
+              href={prev ? `/stash/${slug}/${prev.id}` : null}
+              label={prev ? `Предыдущий бренд: ${prev.name}` : "Нет предыдущего"}
+            >
+              <ChevronLeft className="size-4" aria-hidden />
+            </BrandArrow>
+            <BrandArrow
+              href={next ? `/stash/${slug}/${next.id}` : null}
+              label={next ? `Следующий бренд: ${next.name}` : "Нет следующего"}
+            >
+              <ChevronRight className="size-4" aria-hidden />
+            </BrandArrow>
+          </div>
+        </div>
+        <div>
+          <p className="text-[11px] tracking-[0.28em] text-[#f0a65a] uppercase">{venue.name}</p>
+          <h1 className="mt-1 text-2xl font-semibold md:text-3xl">{brand.name}</h1>
+        </div>
       </header>
 
-      <BrandPanel
-        venueSlug={slug}
-        brandId={brand.id}
-        brandName={brand.name}
-        initialFlavors={flavorRows.map((f) => ({
-          id: f.id,
-          name: f.name,
-          grams: gramsByFlavor.get(f.id) ?? 0,
-        }))}
-      />
+      <div className="grid grid-cols-3 gap-2 md:gap-3">
+        <StatCard icon={Package} label="Позиций" value={String(rows.length)} />
+        <StatCard icon={Scale} label="На складе" value={formatGrams(totalGrams)} tone="green" />
+        <StatCard icon={AlertTriangle} label="Мало / нет" value={String(attention)} tone="amber" />
+      </div>
+
+      <BrandPanel venueSlug={slug} brandId={brand.id} initialFlavors={rows} />
     </div>
+  );
+}
+
+function BrandArrow({
+  href,
+  label,
+  children,
+}: {
+  href: string | null;
+  label: string;
+  children: React.ReactNode;
+}) {
+  const base =
+    "flex size-10 items-center justify-center rounded-lg border border-white/12 md:size-9";
+  if (!href) {
+    return (
+      <span className={`${base} opacity-30`} aria-label={label}>
+        {children}
+      </span>
+    );
+  }
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      title={label}
+      className={`${base} transition hover:border-[var(--aura-amber)]/45 hover:text-[#f0a65a] active:scale-95`}
+    >
+      {children}
+    </Link>
   );
 }

@@ -1,40 +1,36 @@
 import { eq } from "drizzle-orm";
 import { db } from "./db";
-import { flavors, stock } from "./schema";
+import { stock } from "./schema";
+import { stockLevel } from "./stock-level";
 
-/** Flavors with positive stock below this are "low". */
-export const LOW_STOCK_GRAMS = 50;
+export { formatGrams, LOW_STOCK_GRAMS, stockLevel } from "./stock-level";
 
 export type BrandStockSummary = {
   brandId: string;
   flavorCount: number;
   totalGrams: number;
   lowCount: number;
+  outCount: number;
 };
 
 export type VenueStockStrip = {
+  brandCount: number;
   brandsWithStock: number;
+  flavorCount: number;
   totalGrams: number;
   lowCount: number;
+  outCount: number;
 };
 
-export function formatGrams(grams: number): string {
-  return `${grams.toLocaleString("ru-RU")} г`;
-}
-
-export function formatBrandStockLine(summary: BrandStockSummary): string {
-  if (summary.flavorCount === 0) return "нет ароматов";
-  const base = `${summary.flavorCount} аром. · ${formatGrams(summary.totalGrams)}`;
-  if (summary.lowCount > 0) {
-    return `${base} · ${summary.lowCount} мало`;
-  }
-  return base;
+export function emptyBrandSummary(brandId: string): BrandStockSummary {
+  return { brandId, flavorCount: 0, totalGrams: 0, lowCount: 0, outCount: 0 };
 }
 
 export async function loadVenueBrandStock(
   venueId: string,
 ): Promise<{ byBrand: Map<string, BrandStockSummary>; strip: VenueStockStrip }> {
-  const [flavorRows, stockRows] = await Promise.all([
+  const [brandRows, flavorRows, stockRows] = await Promise.all([
+    db().query.brands.findMany(),
     db().query.flavors.findMany(),
     db().query.stock.findMany({ where: eq(stock.venueId, venueId) }),
   ]);
@@ -44,29 +40,68 @@ export async function loadVenueBrandStock(
 
   for (const flavor of flavorRows) {
     const grams = gramsByFlavor.get(flavor.id) ?? 0;
-    const current = byBrand.get(flavor.brandId) ?? {
-      brandId: flavor.brandId,
-      flavorCount: 0,
-      totalGrams: 0,
-      lowCount: 0,
-    };
+    const current = byBrand.get(flavor.brandId) ?? emptyBrandSummary(flavor.brandId);
     current.flavorCount += 1;
     current.totalGrams += grams;
-    if (grams > 0 && grams < LOW_STOCK_GRAMS) current.lowCount += 1;
+    const level = stockLevel(grams);
+    if (level === "low") current.lowCount += 1;
+    if (level === "out") current.outCount += 1;
     byBrand.set(flavor.brandId, current);
   }
 
-  let brandsWithStock = 0;
-  let totalGrams = 0;
-  let lowCount = 0;
+  const strip: VenueStockStrip = {
+    brandCount: brandRows.length,
+    brandsWithStock: 0,
+    flavorCount: 0,
+    totalGrams: 0,
+    lowCount: 0,
+    outCount: 0,
+  };
   for (const summary of byBrand.values()) {
-    if (summary.totalGrams > 0) brandsWithStock += 1;
-    totalGrams += summary.totalGrams;
-    lowCount += summary.lowCount;
+    if (summary.totalGrams > 0) strip.brandsWithStock += 1;
+    strip.flavorCount += summary.flavorCount;
+    strip.totalGrams += summary.totalGrams;
+    strip.lowCount += summary.lowCount;
+    strip.outCount += summary.outCount;
   }
 
-  return {
-    byBrand,
-    strip: { brandsWithStock, totalGrams, lowCount },
-  };
+  return { byBrand, strip };
+}
+
+export type RunningLowRow = {
+  flavorId: string;
+  flavorName: string;
+  brandId: string;
+  brandName: string;
+  grams: number;
+};
+
+/** Flavors at a venue that are low or out, low first, then by brand and name. */
+export async function loadRunningLow(venueId: string): Promise<RunningLowRow[]> {
+  const [brandRows, flavorRows, stockRows] = await Promise.all([
+    db().query.brands.findMany(),
+    db().query.flavors.findMany(),
+    db().query.stock.findMany({ where: eq(stock.venueId, venueId) }),
+  ]);
+  const brandName = new Map(brandRows.map((b) => [b.id, b.name]));
+  const gramsByFlavor = new Map(stockRows.map((s) => [s.flavorId, s.grams]));
+
+  return flavorRows
+    .map((f) => ({
+      flavorId: f.id,
+      flavorName: f.name,
+      brandId: f.brandId,
+      brandName: brandName.get(f.brandId) ?? "",
+      grams: gramsByFlavor.get(f.id) ?? 0,
+    }))
+    .filter((row) => stockLevel(row.grams) !== "ok")
+    .sort((a, b) => {
+      const la = stockLevel(a.grams) === "low" ? 0 : 1;
+      const lb = stockLevel(b.grams) === "low" ? 0 : 1;
+      if (la !== lb) return la - lb;
+      return (
+        a.brandName.localeCompare(b.brandName, "ru") ||
+        a.flavorName.localeCompare(b.flavorName, "ru")
+      );
+    });
 }

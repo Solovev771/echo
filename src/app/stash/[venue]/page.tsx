@@ -1,15 +1,11 @@
 import { asc } from "drizzle-orm";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { VenueSummaryStrip } from "@/components/stash/venue-summary-strip";
-import { canAccessVenue, getVenueBySlug, requireUser } from "@/stash/access";
+import { AlertTriangle, Layers, Package, Scale } from "lucide-react";
+import { BrandTable, type BrandRow } from "@/components/stash/brand-table";
+import { StatCard } from "@/components/stash/stat-card";
+import { requireVenueAccess } from "@/stash/access";
 import { db } from "@/stash/db";
 import { brands } from "@/stash/schema";
-import {
-  formatBrandStockLine,
-  loadVenueBrandStock,
-  type BrandStockSummary,
-} from "@/stash/stock-summary";
+import { formatGrams, loadVenueBrandStock } from "@/stash/stock-summary";
 
 export default async function VenueBrandsPage({
   params,
@@ -17,68 +13,58 @@ export default async function VenueBrandsPage({
   params: Promise<{ venue: string }>;
 }) {
   const { venue: slug } = await params;
-  const user = await requireUser();
-  if (!user) redirect("/stash/login");
-
-  const venue = await getVenueBySlug(slug);
-  if (!venue) redirect("/stash");
-  if (!(await canAccessVenue(user, venue.id))) redirect("/stash");
+  const { venue } = await requireVenueAccess(slug);
 
   const list = await db().query.brands.findMany({
     orderBy: [asc(brands.sortOrder), asc(brands.name)],
   });
   const { byBrand, strip } = await loadVenueBrandStock(venue.id);
 
+  const rows: BrandRow[] = list.map((brand) => {
+    const s = byBrand.get(brand.id);
+    return {
+      id: brand.id,
+      name: brand.name,
+      flavorCount: s?.flavorCount ?? 0,
+      totalGrams: s?.totalGrams ?? 0,
+      attention: (s?.lowCount ?? 0) + (s?.outCount ?? 0),
+    };
+  });
+  const attention = strip.lowCount + strip.outCount;
+
   return (
-    <div className="space-y-5">
-      <header className="space-y-2">
-        <Link href="/stash" className="text-xs text-[var(--aura-muted)] md:hidden">
-          ← Точки
-        </Link>
-        <h1 className="text-2xl font-semibold">{venue.name}</h1>
-        <p className="text-sm text-[var(--aura-muted)]">{venue.address}</p>
-        <VenueSummaryStrip strip={strip} />
+    <div className="space-y-5 md:space-y-6">
+      <header>
+        <p className="text-[11px] tracking-[0.28em] text-[#f0a65a] uppercase">{venue.name}</p>
+        <h1 className="mt-1 text-2xl font-semibold md:text-3xl">Склад</h1>
+        <p className="mt-1 text-sm text-[var(--aura-muted)]">
+          Остатки табака по брендам. Откройте бренд, чтобы списать или пополнить.
+        </p>
       </header>
 
-      <section className="space-y-2">
-        <h2 className="text-xs tracking-wider text-[var(--aura-muted)] uppercase">
-          Бренды
-        </h2>
-        <div className="overflow-hidden rounded-xl border border-white/10 bg-black/35">
-          {list.map((brand, i) => {
-            const summary: BrandStockSummary = byBrand.get(brand.id) ?? {
-              brandId: brand.id,
-              flavorCount: 0,
-              totalGrams: 0,
-              lowCount: 0,
-            };
-            const line = formatBrandStockLine(summary);
-            return (
-              <Link
-                key={brand.id}
-                href={`/stash/${slug}/${brand.id}`}
-                className={`flex items-center justify-between gap-3 px-4 py-2.5 text-sm transition hover:bg-white/5 ${
-                  i > 0 ? "border-t border-white/8" : ""
-                }`}
-              >
-                <span className="min-w-0 truncate font-medium">{brand.name}</span>
-                <span className="flex shrink-0 items-center gap-2 text-xs text-[var(--aura-muted)]">
-                  <span
-                    className={
-                      summary.lowCount > 0
-                        ? "text-[var(--aura-amber)]"
-                        : undefined
-                    }
-                  >
-                    {line}
-                  </span>
-                  <span className="text-[var(--aura-muted)]/70">→</span>
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3">
+        <StatCard icon={Layers} label="Брендов" value={String(strip.brandCount)} />
+        <StatCard
+          icon={Package}
+          label="Позиций"
+          value={strip.flavorCount.toLocaleString("ru-RU")}
+        />
+        <StatCard
+          icon={Scale}
+          label="На складе"
+          value={formatGrams(strip.totalGrams)}
+          tone="green"
+        />
+        <StatCard
+          icon={AlertTriangle}
+          label="Заканчивается"
+          value={attention.toLocaleString("ru-RU")}
+          tone="amber"
+          href={`/stash/${venue.slug}/low`}
+        />
+      </div>
+
+      <BrandTable venueSlug={venue.slug} rows={rows} />
     </div>
   );
 }
