@@ -6,6 +6,7 @@ import {
   Pencil,
   Sparkles,
   Trash2,
+  Truck,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -146,7 +147,7 @@ export default async function HistoryPage({
               </div>
               <ul>
                 {day.rows.map((row, i) => (
-                  <MovementItem key={row.id} row={row} first={i === 0} />
+                  <MovementItem key={row.id} row={row} first={i === 0} slug={slug} />
                 ))}
               </ul>
             </section>
@@ -162,7 +163,7 @@ export default async function HistoryPage({
   );
 }
 
-function MovementItem({ row, first }: { row: MovementRow; first: boolean }) {
+function MovementItem({ row, first, slug }: { row: MovementRow; first: boolean; slug: string }) {
   const meta = KIND_META[row.kind];
   const Icon = meta.icon;
   const stockKind = row.kind === "in" || row.kind === "out" || row.kind === "set";
@@ -203,7 +204,15 @@ function MovementItem({ row, first }: { row: MovementRow; first: boolean }) {
             ) : null}
           </div>
         </div>
-        {row.note ? (
+        {row.supplyId ? (
+          <Link
+            href={`/stash/${slug}/supplies/${row.supplyId}`}
+            className="mt-1.5 inline-flex h-7 max-w-full items-center gap-1 rounded-md bg-emerald-500/12 px-2 text-[11px] font-medium text-emerald-300 ring-1 ring-inset ring-emerald-400/20 transition hover:bg-emerald-500/20"
+          >
+            <Truck className="size-3 shrink-0" aria-hidden />
+            <span className="truncate">{row.note || "Поставка"}</span>
+          </Link>
+        ) : row.note ? (
           <p className="mt-1 text-xs text-[var(--aura-white)]/70 italic">«{row.note}»</p>
         ) : null}
         <p className="mt-1 text-[11px] text-[var(--aura-muted)]">

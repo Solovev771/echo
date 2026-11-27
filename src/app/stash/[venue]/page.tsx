@@ -1,5 +1,6 @@
 import { asc } from "drizzle-orm";
-import { AlertTriangle, Layers, Package, Scale } from "lucide-react";
+import { AlertTriangle, Layers, Package, Plus, Scale } from "lucide-react";
+import Link from "next/link";
 import { AddBrandButton } from "@/components/stash/brand-admin";
 import { BrandTable, type BrandRow } from "@/components/stash/brand-table";
 import { StatCard } from "@/components/stash/stat-card";
@@ -39,7 +40,16 @@ export default async function VenueBrandsPage({
         <p className="text-[11px] tracking-[0.28em] text-[#f0a65a] uppercase">{venue.name}</p>
         <div className="mt-1 flex items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold md:text-3xl">Склад</h1>
-          {user.role === "admin" ? <AddBrandButton venueSlug={venue.slug} /> : null}
+          <div className="flex shrink-0 gap-2">
+            {user.role === "admin" ? <AddBrandButton venueSlug={venue.slug} /> : null}
+            <Link
+              href={`/stash/${venue.slug}/supplies/new`}
+              className="flex h-11 items-center gap-1.5 rounded-xl bg-[var(--aura-glow)] px-4 text-sm font-semibold text-black transition hover:brightness-110 active:scale-[0.98] md:h-10"
+            >
+              <Plus className="size-4" aria-hidden />
+              Поставка
+            </Link>
+          </div>
         </div>
         <p className="mt-1 text-sm text-[var(--aura-muted)]">
           Остатки табака по брендам. Откройте бренд, чтобы списать или пополнить.

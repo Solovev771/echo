@@ -3,15 +3,20 @@
 import {
   AlertTriangle,
   ArrowLeft,
+  ChevronRight,
   History,
   LogOut,
   MapPin,
   Menu,
+  Plus,
+  Truck,
   Users,
   Warehouse,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import { AuraDialog } from "@/components/stash/kit";
 import { shortVenueName } from "@/stash/stock-level";
 
 export type ShellVenue = {
@@ -31,10 +36,12 @@ function currentVenueSlug(pathname: string, venues: ShellVenue[]) {
   return venues.find((v) => v.slug === segment)?.slug ?? null;
 }
 
-const VENUE_SUBPAGES = ["/low", "/history"];
+const VENUE_SUBPAGES = ["low", "history", "supplies"];
 
+/** "/low", "/history" or "/supplies" for venue sections (including nested supply pages), else "". */
 function venueSubpage(pathname: string) {
-  return VENUE_SUBPAGES.find((suffix) => pathname.endsWith(suffix)) ?? "";
+  const segment = pathname.split("/")[3] ?? "";
+  return VENUE_SUBPAGES.includes(segment) ? `/${segment}` : "";
 }
 
 function useLogout() {
@@ -59,6 +66,7 @@ export function StashShell({
   const venueSlug = currentVenueSlug(pathname, venues);
   const venue = venues.find((v) => v.slug === venueSlug) ?? null;
   const logout = useLogout();
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const sections = venue
     ? [
@@ -70,6 +78,14 @@ export function StashShell({
           active:
             pathname === `/stash/${venue.slug}` ||
             (pathname.startsWith(`/stash/${venue.slug}/`) && !venueSubpage(pathname)),
+          badge: 0,
+        },
+        {
+          href: `/stash/${venue.slug}/supplies`,
+          label: "Поставки",
+          short: "Поставки",
+          icon: Truck,
+          active: venueSubpage(pathname) === "/supplies",
           badge: 0,
         },
         {
@@ -222,21 +238,95 @@ export function StashShell({
             aria-label="Разделы"
           >
             <div className="grid grid-cols-4">
-              {sections.map((item) => (
-                <BottomTab key={item.href} {...item} label={item.short} />
-              ))}
-              <BottomTab
-                href="/stash"
-                label="Ещё"
-                icon={Menu}
-                active={pathname === "/stash"}
-                badge={0}
-              />
+              {sections
+                .filter((item) => !item.href.endsWith("/supplies"))
+                .map((item) => (
+                  <BottomTab key={item.href} {...item} label={item.short} />
+                ))}
+              <button
+                type="button"
+                onClick={() => setMoreOpen(true)}
+                aria-haspopup="dialog"
+                className={`relative flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition active:bg-white/5 ${
+                  venueSubpage(pathname) === "/supplies" || moreOpen
+                    ? "text-[#f0a65a]"
+                    : "text-[var(--aura-muted)]"
+                }`}
+              >
+                <Menu className="size-5" aria-hidden />
+                Ещё
+                {venueSubpage(pathname) === "/supplies" ? (
+                  <span className="absolute top-0 h-0.5 w-10 rounded-full bg-[var(--aura-glow)]" aria-hidden />
+                ) : null}
+              </button>
             </div>
           </nav>
         ) : null}
+
+        {venue && moreOpen ? (
+          <AuraDialog open onOpenChange={setMoreOpen} title="Ещё">
+            <div
+              className="space-y-3"
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest("a")) setMoreOpen(false);
+              }}
+            >
+              <Link
+                href={`/stash/${venue.slug}/supplies/new`}
+                className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--aura-glow)] text-base font-semibold text-black active:scale-[0.98]"
+              >
+                <Plus className="size-5" aria-hidden />
+                Новая поставка
+              </Link>
+              <ul className="overflow-hidden rounded-xl border border-white/10">
+                <SheetLink href={`/stash/${venue.slug}/supplies`} icon={Truck} label="Поставки" hint="Все приёмки табака" />
+                <SheetLink href="/stash" icon={MapPin} label="Все точки" hint="Сводка по точкам" />
+                {user.role === "admin" ? (
+                  <SheetLink href="/stash/team" icon={Users} label="Сотрудники" hint="Доступы и пароли" />
+                ) : null}
+                <li className="border-t border-white/6 first:border-t-0">
+                  <button
+                    type="button"
+                    onClick={logout}
+                    className="flex min-h-12 w-full items-center gap-3 px-3 py-2 text-left text-sm text-[var(--aura-muted)] active:bg-white/5"
+                  >
+                    <LogOut className="size-4.5" aria-hidden />
+                    Выйти ({user.name})
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </AuraDialog>
+        ) : null}
       </div>
     </div>
+  );
+}
+
+function SheetLink({
+  href,
+  icon: Icon,
+  label,
+  hint,
+}: {
+  href: string;
+  icon: typeof Warehouse;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <li className="border-t border-white/6 first:border-t-0">
+      <Link href={href} className="flex min-h-14 items-center gap-3 px-3 py-2 active:bg-white/5">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/8">
+          <Icon className="size-4.5" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium">{label}</span>
+          <span className="block text-xs text-[var(--aura-muted)]">{hint}</span>
+        </span>
+        <ChevronRight className="size-4 text-[var(--aura-muted)]" aria-hidden />
+      </Link>
+    </li>
   );
 }
 

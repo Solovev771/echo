@@ -112,18 +112,19 @@ export function AddBrandButton({ venueSlug }: { venueSlug: string }) {
 
   return (
     <>
-      <PrimaryButton
+      <SecondaryButton
         type="button"
         onClick={() => {
           setError("");
           setKey((k) => k + 1);
           setOpen(true);
         }}
-        className="shrink-0"
+        className="shrink-0 px-3"
+        aria-label="Новый бренд"
       >
         <Plus className="size-4" aria-hidden />
-        Бренд
-      </PrimaryButton>
+        <span className="hidden min-[400px]:inline">Бренд</span>
+      </SecondaryButton>
       {open ? (
         <BrandNameDialog
           key={key}
