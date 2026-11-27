@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { StashShell, type ShellVenue } from "@/components/stash/stash-shell";
-import { getSession } from "@/stash/auth";
-import { listVenuesForUser } from "@/stash/access";
+import { listVenuesForUser, requireUser } from "@/stash/access";
 import { ensureStash } from "@/stash/ensure";
 import { loadVenueBrandStock } from "@/stash/stock-summary";
 
@@ -10,6 +9,11 @@ export const instant = false;
 export const metadata: Metadata = {
   title: "Аура · Склад",
   description: "Склад табака HookahPlace Aura — две точки, бренды и остатки.",
+  manifest: "/stash/manifest.webmanifest",
+  icons: {
+    icon: [{ url: "/stash/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/stash/icons/apple-180.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: { capable: true, title: "Аура · Склад", statusBarStyle: "black-translucent" },
 };
 
@@ -26,7 +30,7 @@ export default async function StashLayout({
   children: React.ReactNode;
 }) {
   await ensureStash();
-  const user = await getSession();
+  const user = await requireUser();
   const venues = user ? await listVenuesForUser(user) : [];
 
   const shellVenues: ShellVenue[] = await Promise.all(
