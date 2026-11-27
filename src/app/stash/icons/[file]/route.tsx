@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 const ICONS: Record<string, { size: number; inset: number }> = {
@@ -17,6 +19,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/stash/ic
   if (!icon) return new Response("Not found", { status: 404 });
   const { size, inset } = icon;
   const mark = Math.round(size * (1 - inset * 2) * 0.62);
+  const font = await readFile(join(process.cwd(), "assets/fonts/Onest-Bold.ttf"));
 
   return new ImageResponse(
     (
@@ -43,14 +46,18 @@ export async function GET(_request: Request, { params }: RouteContext<"/stash/ic
             boxShadow: `0 0 ${Math.round(size * 0.12)}px rgba(232,106,23,0.55)`,
             color: "#0b0b0b",
             fontSize: Math.round(mark * 0.62),
-            fontWeight: 800,
-            letterSpacing: -2,
+            fontFamily: "Onest",
+            fontWeight: 700,
           }}
         >
           A
         </div>
       </div>
     ),
-    { width: size, height: size },
+    {
+      width: size,
+      height: size,
+      fonts: [{ name: "Onest", data: font, weight: 700, style: "normal" }],
+    },
   );
 }
