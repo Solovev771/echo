@@ -99,7 +99,51 @@ async function migrate() {
       sql: `CREATE INDEX IF NOT EXISTS movements_venue_created ON movements(venue_id, created_at)`,
       args: [],
     },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS supplies (
+      id TEXT PRIMARY KEY,
+      venue_id TEXT NOT NULL,
+      supplier TEXT,
+      note TEXT,
+      user_id TEXT NOT NULL,
+      user_name TEXT NOT NULL,
+      total_grams INTEGER NOT NULL,
+      line_count INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    )`,
+      args: [],
+    },
+    {
+      sql: `CREATE INDEX IF NOT EXISTS supplies_venue_created ON supplies(venue_id, created_at)`,
+      args: [],
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS supply_lines (
+      id TEXT PRIMARY KEY,
+      supply_id TEXT NOT NULL,
+      flavor_id TEXT NOT NULL,
+      flavor_name TEXT NOT NULL,
+      brand_id TEXT NOT NULL,
+      brand_name TEXT NOT NULL,
+      grams INTEGER NOT NULL
+    )`,
+      args: [],
+    },
+    {
+      sql: `CREATE INDEX IF NOT EXISTS supply_lines_supply ON supply_lines(supply_id)`,
+      args: [],
+    },
   ]);
+
+  const movementColumns = await sql.execute("PRAGMA table_info(movements)");
+  if (!movementColumns.rows.some((r) => r.name === "supply_id")) {
+    try {
+      await sql.execute("ALTER TABLE movements ADD COLUMN supply_id TEXT");
+    } catch (err) {
+      // Another cold start may have added it between the check and the ALTER.
+      if (!/duplicate column/i.test(err instanceof Error ? err.message : String(err))) throw err;
+    }
+  }
 }
 
 async function seed() {

@@ -81,5 +81,29 @@ export const movements = sqliteTable("movements", {
   delta: integer("delta").notNull().default(0),
   gramsAfter: integer("grams_after").notNull().default(0),
   note: text("note"),
+  supplyId: text("supply_id"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+export const supplies = sqliteTable("supplies", {
+  id: text("id").primaryKey(),
+  venueId: text("venue_id").notNull(),
+  supplier: text("supplier"),
+  note: text("note"),
+  userId: text("user_id").notNull(),
+  userName: text("user_name").notNull(),
+  totalGrams: integer("total_grams").notNull(),
+  lineCount: integer("line_count").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+/** Name snapshots, no foreign keys: a supply stays readable after flavors are renamed or deleted. */
+export const supplyLines = sqliteTable("supply_lines", {
+  id: text("id").primaryKey(),
+  supplyId: text("supply_id").notNull(),
+  flavorId: text("flavor_id").notNull(),
+  flavorName: text("flavor_name").notNull(),
+  brandId: text("brand_id").notNull(),
+  brandName: text("brand_name").notNull(),
+  grams: integer("grams").notNull(),
 });
