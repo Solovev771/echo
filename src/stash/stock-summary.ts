@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
 import { db } from "./db";
-import { stock } from "./schema";
-import { stockLevel } from "./stock-level";
+import { stock, venues } from "./schema";
+import { isLowStockGrams, LOW_STOCK_GRAMS, stockLevel } from "./stock-level";
 
-export { formatGrams, LOW_STOCK_GRAMS, stockLevel } from "./stock-level";
+export { formatGrams, isLowStockGrams, LOW_STOCK_GRAMS, LOW_STOCK_OPTIONS, stockLevel } from "./stock-level";
+export type { LowStockGrams } from "./stock-level";
 
 export type BrandStockSummary = {
   brandId: string;
@@ -26,9 +27,15 @@ export function emptyBrandSummary(brandId: string): BrandStockSummary {
   return { brandId, flavorCount: 0, totalGrams: 0, lowCount: 0, outCount: 0 };
 }
 
+export async function venueLowGrams(venueId: string): Promise<number> {
+  const venue = await db().query.venues.findFirst({ where: eq(venues.id, venueId) });
+  return venue && isLowStockGrams(venue.lowGrams) ? venue.lowGrams : LOW_STOCK_GRAMS;
+}
+
 export async function loadVenueBrandStock(
   venueId: string,
 ): Promise<{ byBrand: Map<string, BrandStockSummary>; strip: VenueStockStrip }> {
+  const lowGrams = await venueLowGrams(venueId);
   const [brandRows, flavorRows, stockRows] = await Promise.all([
     db().query.brands.findMany(),
     db().query.flavors.findMany(),
@@ -43,7 +50,7 @@ export async function loadVenueBrandStock(
     const current = byBrand.get(flavor.brandId) ?? emptyBrandSummary(flavor.brandId);
     current.flavorCount += 1;
     current.totalGrams += grams;
-    const level = stockLevel(grams);
+    const level = stockLevel(grams, lowGrams);
     if (level === "low") current.lowCount += 1;
     if (level === "out") current.outCount += 1;
     byBrand.set(flavor.brandId, current);
@@ -79,6 +86,7 @@ export type RunningLowRow = {
 
 /** Flavors at a venue that are low or out, low first, then by brand and name. */
 export async function loadRunningLow(venueId: string): Promise<RunningLowRow[]> {
+  const lowGrams = await venueLowGrams(venueId);
   const [brandRows, flavorRows, stockRows] = await Promise.all([
     db().query.brands.findMany(),
     db().query.flavors.findMany(),
@@ -96,10 +104,10 @@ export async function loadRunningLow(venueId: string): Promise<RunningLowRow[]> 
       grams: gramsByFlavor.get(f.id) ?? 0,
       packGrams: f.packGrams,
     }))
-    .filter((row) => stockLevel(row.grams) !== "ok")
+    .filter((row) => stockLevel(row.grams, lowGrams) !== "ok")
     .sort((a, b) => {
-      const la = stockLevel(a.grams) === "low" ? 0 : 1;
-      const lb = stockLevel(b.grams) === "low" ? 0 : 1;
+      const la = stockLevel(a.grams, lowGrams) === "low" ? 0 : 1;
+      const lb = stockLevel(b.grams, lowGrams) === "low" ? 0 : 1;
       if (la !== lb) return la - lb;
       return (
         a.brandName.localeCompare(b.brandName, "ru") ||

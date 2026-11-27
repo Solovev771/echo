@@ -14,6 +14,8 @@ export const venues = sqliteTable("venues", {
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   address: text("address").notNull(),
+  /** Positive stock below this many grams counts as "running low" at this venue. */
+  lowGrams: integer("low_grams").notNull().default(50),
 });
 
 export const memberships = sqliteTable(

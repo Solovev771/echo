@@ -167,6 +167,7 @@ async function migrate() {
   await addColumn(sql, "supply_lines", "pack_grams", "INTEGER NOT NULL DEFAULT 0");
   await addColumn(sql, "supply_lines", "price_kopecks", "INTEGER");
   await addColumn(sql, "supply_lines", "packs", "INTEGER NOT NULL DEFAULT 0");
+  await addColumn(sql, "venues", "low_grams", "INTEGER NOT NULL DEFAULT 50");
 }
 
 async function addColumn(

@@ -8,7 +8,8 @@ import { StatCard } from "@/components/stash/stat-card";
 import { requireVenueAccess } from "@/stash/access";
 import { db } from "@/stash/db";
 import { brands, flavors, lines, stock } from "@/stash/schema";
-import { formatGrams, stockLevel } from "@/stash/stock-summary";
+import { formatGrams } from "@/stash/stock-summary";
+import { isLowStockGrams, LOW_STOCK_GRAMS, stockLevel } from "@/stash/stock-level";
 
 export default async function BrandPage({
   params,
@@ -45,8 +46,9 @@ export default async function BrandPage({
     packGrams: f.packGrams,
     priceKopecks: f.priceKopecks,
   }));
+  const lowGrams = isLowStockGrams(venue.lowGrams) ? venue.lowGrams : LOW_STOCK_GRAMS;
   const totalGrams = rows.reduce((sum, r) => sum + r.grams, 0);
-  const attention = rows.filter((r) => stockLevel(r.grams) !== "ok").length;
+  const attention = rows.filter((r) => stockLevel(r.grams, lowGrams) !== "ok").length;
 
   return (
     <div className="space-y-5 md:space-y-6">
@@ -93,7 +95,7 @@ export default async function BrandPage({
         <StatCard icon={AlertTriangle} label="Мало / нет" value={String(attention)} tone="amber" />
       </div>
 
-      <BrandPanel venueSlug={slug} brandId={brand.id} initialFlavors={rows} />
+      <BrandPanel venueSlug={slug} brandId={brand.id} initialFlavors={rows} lowGrams={lowGrams} />
     </div>
   );
 }

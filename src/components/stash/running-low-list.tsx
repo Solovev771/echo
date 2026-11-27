@@ -9,11 +9,13 @@ export function RunningLowList({
   title,
   hint,
   rows,
+  lowGrams,
 }: {
   venueSlug: string;
   title: string;
   hint: string;
   rows: RunningLowRow[];
+  lowGrams: number;
 }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#121110]/85">
@@ -50,6 +52,7 @@ export function RunningLowList({
                 packGrams: row.packGrams,
               }}
               editable={false}
+              lowGrams={lowGrams}
             />
           </li>
         ))}

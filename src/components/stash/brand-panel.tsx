@@ -30,10 +30,12 @@ export function BrandPanel({
   venueSlug,
   brandId,
   initialFlavors,
+  lowGrams,
 }: {
   venueSlug: string;
   brandId: string;
   initialFlavors: FlavorRow[];
+  lowGrams: number;
 }) {
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -49,11 +51,11 @@ export function BrandPanel({
   const counts = useMemo(() => {
     const c = { all: initialFlavors.length, low: 0, out: 0 };
     for (const f of initialFlavors) {
-      const level = stockLevel(f.grams);
+      const level = stockLevel(f.grams, lowGrams);
       if (level !== "ok") c[level] += 1;
     }
     return c;
-  }, [initialFlavors]);
+  }, [initialFlavors, lowGrams]);
 
   const lineOptions = useMemo(
     () =>
@@ -67,11 +69,11 @@ export function BrandPanel({
     const needle = q.trim().toLowerCase();
     return initialFlavors.filter(
       (f) =>
-        (filter === "all" || stockLevel(f.grams) === filter) &&
+        (filter === "all" || stockLevel(f.grams, lowGrams) === filter) &&
         (lineFilter === "all" || f.lineName === lineFilter) &&
         (!needle || `${f.lineName} ${f.name}`.toLowerCase().includes(needle)),
     );
-  }, [initialFlavors, q, filter, lineFilter]);
+  }, [initialFlavors, q, filter, lineFilter, lowGrams]);
 
   const priceKopecks = parsePriceKopecks(price);
   const canCreate = Boolean(name.trim() && lineName.trim() && pack && priceKopecks !== null);
@@ -253,7 +255,7 @@ export function BrandPanel({
                       {formatPrice(flavor.priceKopecks)}
                     </span>
                   </span>
-                  <FlavorControls venueSlug={venueSlug} flavor={flavor} />
+                  <FlavorControls venueSlug={venueSlug} flavor={flavor} lowGrams={lowGrams} />
                 </li>
               ))}
             </ul>

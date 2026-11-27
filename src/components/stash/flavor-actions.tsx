@@ -369,10 +369,12 @@ export function FlavorControls({
   venueSlug,
   flavor,
   editable = true,
+  lowGrams,
 }: {
   venueSlug: string;
   flavor: FlavorRef;
   editable?: boolean;
+  lowGrams?: number;
 }) {
   const { adjust, busy, error } = useStockAdjust(venueSlug);
   const [dialog, setDialog] = useState<OpenDialog>(null);
@@ -395,7 +397,7 @@ export function FlavorControls({
         aria-label={`Изменить остаток: ${flavor.name}`}
         title="Приход, расход или инвентаризация"
       >
-        <StockBadge grams={flavor.grams} />
+        <StockBadge grams={flavor.grams} lowGrams={lowGrams} />
       </button>
       <div className="flex shrink-0 items-center gap-1.5">
         <StockStepper

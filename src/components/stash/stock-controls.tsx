@@ -3,7 +3,7 @@
 import { Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { stockLevel } from "@/stash/stock-level";
+import { LOW_STOCK_GRAMS, stockLevel } from "@/stash/stock-level";
 
 export function useStockAdjust(venueSlug: string) {
   const router = useRouter();
@@ -35,8 +35,8 @@ export function useStockAdjust(venueSlug: string) {
   return { adjust, busy, error };
 }
 
-export function StockBadge({ grams }: { grams: number }) {
-  const level = stockLevel(grams);
+export function StockBadge({ grams, lowGrams = LOW_STOCK_GRAMS }: { grams: number; lowGrams?: number }) {
+  const level = stockLevel(grams, lowGrams);
   const styles = {
     ok: "bg-emerald-500/15 text-emerald-300 ring-emerald-400/25",
     low: "bg-[var(--aura-amber)]/20 text-[#f0a65a] ring-[var(--aura-amber)]/40",
