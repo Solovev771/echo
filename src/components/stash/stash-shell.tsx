@@ -3,8 +3,11 @@
 import {
   AlertTriangle,
   ArrowLeft,
+  History,
   LogOut,
   MapPin,
+  Menu,
+  Users,
   Warehouse,
 } from "lucide-react";
 import Link from "next/link";
@@ -26,6 +29,12 @@ type ShellUser = {
 function currentVenueSlug(pathname: string, venues: ShellVenue[]) {
   const segment = pathname.split("/")[2];
   return venues.find((v) => v.slug === segment)?.slug ?? null;
+}
+
+const VENUE_SUBPAGES = ["/low", "/history"];
+
+function venueSubpage(pathname: string) {
+  return VENUE_SUBPAGES.find((suffix) => pathname.endsWith(suffix)) ?? "";
 }
 
 function useLogout() {
@@ -56,19 +65,28 @@ export function StashShell({
         {
           href: `/stash/${venue.slug}`,
           label: "Склад",
+          short: "Склад",
           icon: Warehouse,
           active:
             pathname === `/stash/${venue.slug}` ||
-            (pathname.startsWith(`/stash/${venue.slug}/`) &&
-              !pathname.endsWith("/low")),
+            (pathname.startsWith(`/stash/${venue.slug}/`) && !venueSubpage(pathname)),
           badge: 0,
         },
         {
           href: `/stash/${venue.slug}/low`,
           label: "Заканчивается",
+          short: "Мало",
           icon: AlertTriangle,
           active: pathname === `/stash/${venue.slug}/low`,
           badge: venue.attentionCount,
+        },
+        {
+          href: `/stash/${venue.slug}/history`,
+          label: "Журнал",
+          short: "Журнал",
+          icon: History,
+          active: pathname === `/stash/${venue.slug}/history`,
+          badge: 0,
         },
       ]
     : [];
@@ -108,6 +126,18 @@ export function StashShell({
               {sections.map((item) => (
                 <SideLink key={item.href} {...item} />
               ))}
+            </NavGroup>
+          ) : null}
+
+          {user.role === "admin" ? (
+            <NavGroup title="Управление">
+              <SideLink
+                href="/stash/team"
+                label="Сотрудники"
+                icon={Users}
+                active={pathname === "/stash/team"}
+                badge={0}
+              />
             </NavGroup>
           ) : null}
 
@@ -161,7 +191,7 @@ export function StashShell({
             <div className="-mx-1 flex gap-1 pb-3" role="tablist" aria-label="Точка">
               {venues.map((v) => {
                 const active = v.slug === venueSlug;
-                const suffix = pathname.endsWith("/low") ? "/low" : "";
+                const suffix = venueSubpage(pathname);
                 return (
                   <Link
                     key={v.slug}
@@ -191,14 +221,14 @@ export function StashShell({
             className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#0b0b0b]/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
             aria-label="Разделы"
           >
-            <div className="grid grid-cols-3">
+            <div className="grid grid-cols-4">
               {sections.map((item) => (
-                <BottomTab key={item.href} {...item} />
+                <BottomTab key={item.href} {...item} label={item.short} />
               ))}
               <BottomTab
                 href="/stash"
-                label="Точки"
-                icon={MapPin}
+                label="Ещё"
+                icon={Menu}
                 active={pathname === "/stash"}
                 badge={0}
               />
