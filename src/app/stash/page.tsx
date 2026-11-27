@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronRight, MapPin, Scale } from "lucide-react";
+import { AlertTriangle, ChevronRight, MapPin, Scale, Smartphone, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { listVenuesForUser, requireUser } from "@/stash/access";
@@ -72,6 +72,41 @@ export default async function StashHomePage() {
           })}
         </div>
       )}
+
+      <section className="space-y-2">
+        <h2 className="px-1 text-[11px] tracking-[0.2em] text-[var(--aura-muted)] uppercase">Ещё</h2>
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#121110]/85">
+          {user.role === "admin" ? (
+            <Link
+              href="/stash/team"
+              className="group flex items-center gap-3 border-b border-white/6 px-4 py-3.5 transition hover:bg-white/[0.03]"
+            >
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/8">
+                <Users className="size-4.5" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium">Сотрудники</span>
+                <span className="block text-xs text-[var(--aura-muted)]">
+                  Добавить, выдать доступ к точкам, сменить пароль
+                </span>
+              </span>
+              <ChevronRight className="size-4 text-[var(--aura-muted)]" aria-hidden />
+            </Link>
+          ) : null}
+          <div className="flex items-start gap-3 px-4 py-3.5">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--aura-amber)]/15 text-[#f0a65a]">
+              <Smartphone className="size-4.5" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium">Склад на экране телефона</span>
+              <span className="block text-xs text-[var(--aura-muted)]">
+                iPhone: «Поделиться» → «На экран „Домой“». Android: меню ⋮ → «Добавить на главный
+                экран». Склад откроется как отдельное приложение.
+              </span>
+            </span>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
