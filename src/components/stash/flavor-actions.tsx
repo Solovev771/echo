@@ -282,8 +282,7 @@ function DeleteDialog({
       <div className="space-y-4">
         {flavor.grams > 0 ? (
           <p className="rounded-xl bg-[var(--aura-amber)]/12 px-3 py-2.5 text-sm text-[#f0a65a]">
-            На этой точке ещё {formatGrams(flavor.grams)}. Если аромат просто закончился —
-            лучше оставить его с нулём.
+            На этой точке ещё {formatGrams(flavor.grams)} — они спишутся вместе с ароматом.
           </p>
         ) : null}
         <ErrorText>{error}</ErrorText>

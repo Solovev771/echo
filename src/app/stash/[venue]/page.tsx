@@ -35,15 +35,15 @@ export default async function VenueBrandsPage({
 
   return (
     <div className="space-y-5 md:space-y-6">
-      <header className="flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[11px] tracking-[0.28em] text-[#f0a65a] uppercase">{venue.name}</p>
-          <h1 className="mt-1 text-2xl font-semibold md:text-3xl">Склад</h1>
-          <p className="mt-1 text-sm text-[var(--aura-muted)]">
-            Остатки табака по брендам. Откройте бренд, чтобы списать или пополнить.
-          </p>
+      <header>
+        <p className="text-[11px] tracking-[0.28em] text-[#f0a65a] uppercase">{venue.name}</p>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold md:text-3xl">Склад</h1>
+          {user.role === "admin" ? <AddBrandButton venueSlug={venue.slug} /> : null}
         </div>
-        {user.role === "admin" ? <AddBrandButton venueSlug={venue.slug} /> : null}
+        <p className="mt-1 text-sm text-[var(--aura-muted)]">
+          Остатки табака по брендам. Откройте бренд, чтобы списать или пополнить.
+        </p>
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3">

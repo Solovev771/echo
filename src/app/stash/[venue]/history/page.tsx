@@ -92,7 +92,7 @@ export default async function HistoryPage({
   }
 
   return (
-    <div className="space-y-5 md:space-y-6">
+    <div className="max-w-3xl space-y-5 md:space-y-6">
       <header>
         <p className="text-[11px] tracking-[0.28em] text-[#f0a65a] uppercase">{venue.name}</p>
         <h1 className="mt-1 text-2xl font-semibold md:text-3xl">Журнал</h1>
