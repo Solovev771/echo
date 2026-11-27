@@ -34,8 +34,8 @@ export default async function NewSupplyPage({
         <p className="text-[11px] tracking-[0.28em] text-[#f0a65a] uppercase">{venue.name}</p>
         <h1 className="mt-1 text-2xl font-semibold md:text-3xl">Новая поставка</h1>
         <p className="mt-1 text-sm text-[var(--aura-muted)]">
-          Выберите бренд и аромат, укажите граммы и добавьте в список. Когда всё внесено —
-          проведите поставку.
+          Выберите аромат из уже заведённых или создайте новый: бренд, название, граммы. Когда всё
+          внесено — проведите поставку.
         </p>
       </header>
 

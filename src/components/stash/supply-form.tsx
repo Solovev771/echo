@@ -78,6 +78,7 @@ export function SupplyForm({
   const [brandId, setBrandId] = useState<string | null>(null);
   const [brandQuery, setBrandQuery] = useState("");
   const [flavorQuery, setFlavorQuery] = useState("");
+  const [existingQuery, setExistingQuery] = useState("");
   const [picked, setPicked] = useState<{ flavorId: string | null; name: string } | null>(null);
   const [grams, setGrams] = useState("");
   const flavorInput = useRef<HTMLInputElement>(null);
@@ -105,6 +106,24 @@ export function SupplyForm({
   }, [draft, restored, venueSlug]);
 
   const brand = brands.find((b) => b.id === brandId) ?? null;
+  const brandNameById = useMemo(() => new Map(brands.map((b) => [b.id, b.name])), [brands]);
+
+  const existingFlavors = useMemo(() => {
+    const needle = existingQuery.trim().toLowerCase();
+    return flavors
+      .map((f) => ({ ...f, brandName: brandNameById.get(f.brandId) ?? "" }))
+      .filter((f) => {
+        if (brandId && f.brandId === brandId) return false;
+        if (!needle) return true;
+        return `${f.brandName} ${f.name}`.toLowerCase().includes(needle);
+      })
+      .sort(
+        (a, b) =>
+          Number(b.grams > 0) - Number(a.grams > 0) ||
+          a.brandName.localeCompare(b.brandName, "ru") ||
+          a.name.localeCompare(b.name, "ru"),
+      );
+  }, [flavors, brandNameById, existingQuery, brandId]);
 
   const brandMatches = useMemo(() => {
     const needle = brandQuery.trim().toLowerCase();
@@ -146,6 +165,13 @@ export function SupplyForm({
     setPicked(next);
     setFlavorQuery("");
     requestAnimationFrame(() => gramsInput.current?.focus());
+  }
+
+  function pickExisting(flavor: Flavor) {
+    setBrandId(flavor.brandId);
+    setBrandQuery("");
+    setExistingQuery("");
+    pick({ flavorId: flavor.id, name: flavor.name });
   }
 
   function addLine(e?: React.FormEvent) {
@@ -236,6 +262,16 @@ export function SupplyForm({
           Добавить позицию
         </h2>
 
+        {!picked && !brand ? (
+          <ExistingPicker
+            query={existingQuery}
+            onQuery={setExistingQuery}
+            rows={existingFlavors}
+            inDraft={inDraft}
+            onPick={pickExisting}
+          />
+        ) : null}
+
         {brand ? (
           <div className="flex items-center justify-between gap-3 rounded-xl bg-black/35 px-3 py-2">
             <span className="min-w-0">
@@ -281,6 +317,7 @@ export function SupplyForm({
 
         {brand && !picked ? (
           <div className="space-y-2">
+            <p className="px-1 text-sm font-medium">Существующие ароматы · {brand.name}</p>
             <SearchBox
               inputRef={flavorInput}
               value={flavorQuery}
@@ -333,10 +370,28 @@ export function SupplyForm({
               })}
               {flavorMatches.length === 0 && !typedName ? (
                 <li className="px-3 py-4 text-sm text-[var(--aura-muted)]">
-                  В этом бренде ещё нет ароматов — впишите название, чтобы создать.
+                  В этом бренде ещё нет ароматов — впишите название, чтобы создать, или выберите
+                  из других брендов ниже.
                 </li>
               ) : null}
             </ul>
+            {existingFlavors.length > 0 ? (
+              <details className="rounded-xl border border-white/8 px-3 py-2">
+                <summary className="flex min-h-10 cursor-pointer items-center text-sm text-[var(--aura-muted)]">
+                  Ароматы других брендов · {existingFlavors.length}
+                </summary>
+                <div className="pt-2">
+                  <ExistingPicker
+                    query={existingQuery}
+                    onQuery={setExistingQuery}
+                    rows={existingFlavors}
+                    inDraft={inDraft}
+                    onPick={pickExisting}
+                    hideTitle
+                  />
+                </div>
+              </details>
+            ) : null}
           </div>
         ) : null}
 
@@ -594,6 +649,76 @@ export function SupplyForm({
             </button>
           </div>
         </AuraDialog>
+      ) : null}
+    </div>
+  );
+}
+
+function ExistingPicker({
+  query,
+  onQuery,
+  rows,
+  inDraft,
+  onPick,
+  hideTitle,
+}: {
+  query: string;
+  onQuery: (value: string) => void;
+  rows: Array<Flavor & { brandName: string }>;
+  inDraft: Map<string, number>;
+  onPick: (flavor: Flavor) => void;
+  hideTitle?: boolean;
+}) {
+  const needle = query.trim();
+  const visible = needle ? rows.slice(0, 40) : rows.slice(0, 15);
+  return (
+    <div className="space-y-2">
+      {hideTitle ? null : <p className="px-1 text-sm font-medium">Из существующих</p>}
+      <SearchBox
+        value={query}
+        onChange={onQuery}
+        placeholder="Найдите аромат или бренд"
+      />
+      {rows.length === 0 ? (
+        <p className="px-1 py-2 text-sm text-[var(--aura-muted)]">
+          Заведённых ароматов пока нет. Выберите бренд ниже и впишите новый.
+        </p>
+      ) : (
+        <ul className="max-h-72 overflow-y-auto rounded-xl border border-white/8">
+          {visible.map((f, i) => {
+            const added = inDraft.get(f.id);
+            return (
+              <li key={f.id} className={i > 0 ? "border-t border-white/6" : ""}>
+                <button
+                  type="button"
+                  onClick={() => onPick(f)}
+                  className="flex min-h-12 w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-white/5 active:bg-white/8"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[11px] tracking-[0.08em] text-[var(--aura-muted)] uppercase">
+                      {f.brandName}
+                    </span>
+                    <span className="block text-sm break-words">{f.name}</span>
+                  </span>
+                  {added ? (
+                    <span className="shrink-0 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[11px] text-emerald-300 tabular-nums">
+                      +{formatGrams(added)}
+                    </span>
+                  ) : null}
+                  <span className="shrink-0 text-xs text-[var(--aura-muted)] tabular-nums">
+                    {formatGrams(f.grams)}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {!needle && rows.length > visible.length ? (
+        <p className="px-1 text-xs text-[var(--aura-muted)]">
+          Показаны первые {visible.length} из {rows.length}. Начните вводить название, чтобы найти
+          остальные.
+        </p>
       ) : null}
     </div>
   );
