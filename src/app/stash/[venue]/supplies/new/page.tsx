@@ -14,12 +14,14 @@ export default async function NewSupplyPage({
   const { venue: slug } = await params;
   const { venue } = await requireVenueAccess(slug);
 
-  const [brandRows, flavorRows, stockRows] = await Promise.all([
+  const [brandRows, flavorRows, stockRows, lineRows] = await Promise.all([
     db().query.brands.findMany({ orderBy: [asc(brands.sortOrder), asc(brands.name)] }),
     db().query.flavors.findMany({ orderBy: [asc(flavors.name)] }),
     db().query.stock.findMany({ where: eq(stock.venueId, venue.id) }),
+    db().query.lines.findMany(),
   ]);
   const gramsByFlavor = new Map(stockRows.map((s) => [s.flavorId, s.grams]));
+  const lineName = new Map(lineRows.map((l) => [l.id, l.name]));
 
   return (
     <div className="max-w-3xl space-y-5 md:space-y-6">
@@ -48,6 +50,9 @@ export default async function NewSupplyPage({
           name: f.name,
           brandId: f.brandId,
           grams: gramsByFlavor.get(f.id) ?? 0,
+          lineName: lineName.get(f.lineId) ?? "",
+          packGrams: f.packGrams,
+          priceKopecks: f.priceKopecks,
         }))}
       />
     </div>

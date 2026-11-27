@@ -74,6 +74,7 @@ export type RunningLowRow = {
   brandId: string;
   brandName: string;
   grams: number;
+  packGrams: number;
 };
 
 /** Flavors at a venue that are low or out, low first, then by brand and name. */
@@ -93,6 +94,7 @@ export async function loadRunningLow(venueId: string): Promise<RunningLowRow[]> 
       brandId: f.brandId,
       brandName: brandName.get(f.brandId) ?? "",
       grams: gramsByFlavor.get(f.id) ?? 0,
+      packGrams: f.packGrams,
     }))
     .filter((row) => stockLevel(row.grams) !== "ok")
     .sort((a, b) => {

@@ -7,7 +7,7 @@ import { BrandPanel } from "@/components/stash/brand-panel";
 import { StatCard } from "@/components/stash/stat-card";
 import { requireVenueAccess } from "@/stash/access";
 import { db } from "@/stash/db";
-import { brands, flavors, stock } from "@/stash/schema";
+import { brands, flavors, lines, stock } from "@/stash/schema";
 import { formatGrams, stockLevel } from "@/stash/stock-summary";
 
 export default async function BrandPage({
@@ -27,18 +27,23 @@ export default async function BrandPage({
   const prev = allBrands[index - 1] ?? null;
   const next = allBrands[index + 1] ?? null;
 
-  const [flavorRows, stockRows] = await Promise.all([
+  const [flavorRows, stockRows, lineRows] = await Promise.all([
     db().query.flavors.findMany({
       where: eq(flavors.brandId, brand.id),
       orderBy: [asc(flavors.name)],
     }),
     db().query.stock.findMany({ where: eq(stock.venueId, venue.id) }),
+    db().query.lines.findMany({ where: eq(lines.brandId, brand.id) }),
   ]);
   const gramsByFlavor = new Map(stockRows.map((s) => [s.flavorId, s.grams]));
+  const lineName = new Map(lineRows.map((l) => [l.id, l.name]));
   const rows = flavorRows.map((f) => ({
     id: f.id,
     name: f.name,
     grams: gramsByFlavor.get(f.id) ?? 0,
+    lineName: lineName.get(f.lineId) ?? "",
+    packGrams: f.packGrams,
+    priceKopecks: f.priceKopecks,
   }));
   const totalGrams = rows.reduce((sum, r) => sum + r.grams, 0);
   const attention = rows.filter((r) => stockLevel(r.grams) !== "ok").length;

@@ -30,9 +30,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { PACK_GRAMS, parsePriceKopecks, priceInputValue } from "@/stash/packs";
 import { formatGrams } from "@/stash/stock-level";
 
-export type FlavorRef = { id: string; name: string; grams: number };
+export type FlavorRef = {
+  id: string;
+  name: string;
+  grams: number;
+  lineName?: string;
+  packGrams?: number;
+  priceKopecks?: number | null;
+};
 export type StockMode = "in" | "out" | "set";
 
 const MODES: { key: StockMode; label: string; icon: typeof PackagePlus }[] = [
@@ -41,7 +49,7 @@ const MODES: { key: StockMode; label: string; icon: typeof PackagePlus }[] = [
   { key: "set", label: "Инвентаризация", icon: ClipboardCheck },
 ];
 
-const QUICK = [20, 50, 100, 250];
+const QUICK = PACK_GRAMS;
 
 function StockDialog({
   open,
@@ -209,15 +217,24 @@ function RenameDialog({
   venueSlug: string;
   flavor: FlavorRef;
 }) {
+  const [lineName, setLineName] = useState(flavor.lineName ?? "");
   const [name, setName] = useState(flavor.name);
+  const [pack, setPack] = useState(flavor.packGrams || 0);
+  const [price, setPrice] = useState(priceInputValue(flavor.priceKopecks));
   const { call, busy, error } = useApi();
+  const priceKopecks = parsePriceKopecks(price);
+  const ready = Boolean(lineName.trim() && name.trim() && pack && priceKopecks !== null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!ready || priceKopecks === null) return;
     const ok = await call("/api/stash/flavors", "PATCH", {
       venueSlug,
       flavorId: flavor.id,
       name,
+      lineName,
+      packGrams: pack,
+      priceKopecks,
     });
     if (ok) onOpenChange(false);
   }
@@ -226,17 +243,38 @@ function RenameDialog({
     <AuraDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Переименовать аромат"
-      description="Название меняется на обеих точках."
+      title="Позиция"
+      description="Линейка, грамовка и цена пачки общие для обеих точек."
     >
       <form onSubmit={submit} className="space-y-4">
-        <Field label="Название">
+        <Field label="Линейка">
+          <input
+            value={lineName}
+            onChange={(e) => setLineName(e.target.value)}
+            required
+            maxLength={40}
+            autoFocus
+            placeholder="Например: Core"
+            className={inputClass}
+          />
+        </Field>
+        <Field label="Аромат">
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
             maxLength={80}
-            autoFocus
+            className={inputClass}
+          />
+        </Field>
+        <PackPicker value={pack} onChange={setPack} />
+        <Field label="Цена за 1 пачку, ₽">
+          <input
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            inputMode="decimal"
+            required
+            placeholder="890"
             className={inputClass}
           />
         </Field>
@@ -245,12 +283,36 @@ function RenameDialog({
           <SecondaryButton type="button" onClick={() => onOpenChange(false)}>
             Отмена
           </SecondaryButton>
-          <PrimaryButton type="submit" disabled={busy || !name.trim()}>
+          <PrimaryButton type="submit" disabled={busy || !ready}>
             {busy ? "Сохраняю…" : "Сохранить"}
           </PrimaryButton>
         </div>
       </form>
     </AuraDialog>
+  );
+}
+
+export function PackPicker({ value, onChange }: { value: number; onChange: (grams: number) => void }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-xs text-[var(--aura-muted)]">Грамовка одной пачки</p>
+      <div className="grid grid-cols-4 gap-1.5">
+        {PACK_GRAMS.map((grams) => (
+          <button
+            key={grams}
+            type="button"
+            onClick={() => onChange(grams)}
+            className={`h-10 rounded-lg border text-sm tabular-nums transition active:scale-95 ${
+              value === grams
+                ? "border-[var(--aura-amber)]/60 bg-[var(--aura-amber)]/20 text-[#f0a65a]"
+                : "border-white/12 bg-white/5 hover:bg-white/10"
+            }`}
+          >
+            {grams}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -336,7 +398,11 @@ export function FlavorControls({
         <StockBadge grams={flavor.grams} />
       </button>
       <div className="flex shrink-0 items-center gap-1.5">
-        <StockStepper disabled={busy === flavor.id} onAdjust={(d) => adjust(flavor.id, d)} />
+        <StockStepper
+          disabled={busy === flavor.id}
+          packGrams={flavor.packGrams}
+          onAdjust={(d) => adjust(flavor.id, d)}
+        />
         <DropdownMenu>
           <DropdownMenuTrigger
             className="flex size-10 items-center justify-center rounded-lg text-[var(--aura-muted)] transition hover:bg-white/8 hover:text-[var(--aura-white)] data-[popup-open]:bg-white/10 md:size-8"
@@ -360,7 +426,7 @@ export function FlavorControls({
                 <DropdownMenuSeparator className="bg-white/8" />
                 <DropdownMenuItem className={menuItemClass} onClick={() => open({ kind: "rename" })}>
                   <Pencil className="size-4 text-[var(--aura-muted)]" aria-hidden />
-                  Переименовать
+                  Линейка и цена
                 </DropdownMenuItem>
                 <DropdownMenuItem className={menuDangerClass} onClick={() => open({ kind: "delete" })}>
                   <Trash2 className="size-4" aria-hidden />

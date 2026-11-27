@@ -6,20 +6,33 @@ import { apiUser, apiVenue, jsonError, readBody } from "@/stash/api";
 import { db } from "@/stash/db";
 import { id } from "@/stash/ids";
 import { recordMovement } from "@/stash/movements";
-import { brands, flavors, stock } from "@/stash/schema";
+import { isPackGrams } from "@/stash/packs";
+import { brands, flavors, lines, stock } from "@/stash/schema";
 
 const nameSchema = z.string().trim().min(1).max(80);
+const lineSchema = z.string().trim().min(1).max(40);
+const packSchema = z
+  .number()
+  .int()
+  .refine(isPackGrams, "Грамовка должна быть 20, 40, 80, 100, 120, 160, 200 или 250 г");
+const priceSchema = z.number().int().min(0).max(10_000_000_00);
 
 const createSchema = z.object({
   venueSlug: z.string().min(1),
   brandId: z.string().min(1),
   name: nameSchema,
+  lineName: lineSchema,
+  packGrams: packSchema,
+  priceKopecks: priceSchema,
 });
 
 const renameSchema = z.object({
   venueSlug: z.string().min(1),
   flavorId: z.string().min(1),
   name: nameSchema,
+  lineName: lineSchema,
+  packGrams: packSchema,
+  priceKopecks: priceSchema,
 });
 
 const deleteSchema = z.object({
@@ -30,7 +43,11 @@ const deleteSchema = z.object({
 export async function POST(request: Request) {
   const auth = await apiUser();
   if (!auth.ok) return auth.response;
-  const body = await readBody(request, createSchema, "Проверьте название");
+  const body = await readBody(
+    request,
+    createSchema,
+    "Проверьте линейку, название, грамовку (20–250) и цену",
+  );
   if (!body.ok) return body.response;
 
   const venue = await apiVenue(auth.user, body.data.venueSlug);
@@ -40,13 +57,26 @@ export async function POST(request: Request) {
   if (!brand) return jsonError("Бренд не найден", 404);
 
   const name = body.data.name;
+  const line = await ensureLine(brand.id, body.data.lineName);
   const existing = await db().query.flavors.findFirst({
-    where: and(eq(flavors.brandId, brand.id), eq(flavors.name, name)),
+    where: and(
+      eq(flavors.brandId, brand.id),
+      eq(flavors.lineId, line.id),
+      eq(flavors.name, name),
+      eq(flavors.packGrams, body.data.packGrams),
+    ),
   });
-  if (existing) return jsonError("Такой аромат уже есть", 409);
+  if (existing) return jsonError("Такая позиция уже есть: та же линейка, аромат и грамовка", 409);
 
   const flavorId = id("fl");
-  await db().insert(flavors).values({ id: flavorId, brandId: brand.id, name });
+  await db().insert(flavors).values({
+    id: flavorId,
+    brandId: brand.id,
+    lineId: line.id,
+    name,
+    packGrams: body.data.packGrams,
+    priceKopecks: body.data.priceKopecks,
+  });
   await db().insert(stock).values({
     id: id("st"),
     venueId: venue.id,
@@ -78,13 +108,33 @@ export async function PATCH(request: Request) {
   if (!flavor) return jsonError("Аромат не найден", 404);
 
   const name = body.data.name;
-  if (name === flavor.name) return NextResponse.json({ ok: true });
+  const line = await ensureLine(flavor.brandId, body.data.lineName);
+  const unchanged =
+    name === flavor.name &&
+    line.id === flavor.lineId &&
+    body.data.packGrams === flavor.packGrams &&
+    body.data.priceKopecks === flavor.priceKopecks;
+  if (unchanged) return NextResponse.json({ ok: true });
   const clash = await db().query.flavors.findFirst({
-    where: and(eq(flavors.brandId, flavor.brandId), eq(flavors.name, name), ne(flavors.id, flavor.id)),
+    where: and(
+      eq(flavors.brandId, flavor.brandId),
+      eq(flavors.lineId, line.id),
+      eq(flavors.name, name),
+      eq(flavors.packGrams, body.data.packGrams),
+      ne(flavors.id, flavor.id),
+    ),
   });
-  if (clash) return jsonError("Такой аромат уже есть", 409);
+  if (clash) return jsonError("Такая позиция уже есть: та же линейка, аромат и грамовка", 409);
 
-  await db().update(flavors).set({ name }).where(eq(flavors.id, flavor.id));
+  await db()
+    .update(flavors)
+    .set({
+      name,
+      lineId: line.id,
+      packGrams: body.data.packGrams,
+      priceKopecks: body.data.priceKopecks,
+    })
+    .where(eq(flavors.id, flavor.id));
   const row = await db().query.stock.findFirst({
     where: and(eq(stock.venueId, venue.id), eq(stock.flavorId, flavor.id)),
   });
@@ -98,6 +148,23 @@ export async function PATCH(request: Request) {
   });
 
   return NextResponse.json({ ok: true });
+}
+
+async function ensureLine(brandId: string, lineName: string) {
+  const name = lineName.trim().replace(/\s+/g, " ");
+  const existing = await db().query.lines.findFirst({
+    where: and(eq(lines.brandId, brandId), eq(lines.name, name)),
+  });
+  if (existing) return existing;
+  await db()
+    .insert(lines)
+    .values({ id: id("ln"), brandId, name, sortOrder: 0 })
+    .onConflictDoNothing();
+  const row = await db().query.lines.findFirst({
+    where: and(eq(lines.brandId, brandId), eq(lines.name, name)),
+  });
+  if (!row) throw new Error("Не удалось сохранить линейку");
+  return row;
 }
 
 export async function DELETE(request: Request) {

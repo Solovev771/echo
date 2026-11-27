@@ -36,11 +36,19 @@ export function RunningLowList({
               >
                 {row.brandName}
               </Link>
-              <span className="line-clamp-2 text-sm font-medium break-words">{row.flavorName}</span>
+              <span className="line-clamp-2 text-sm font-medium break-words">
+                {row.flavorName}
+                {row.packGrams ? ` · ${row.packGrams} г` : ""}
+              </span>
             </span>
             <FlavorControls
               venueSlug={venueSlug}
-              flavor={{ id: row.flavorId, name: row.flavorName, grams: row.grams }}
+              flavor={{
+                id: row.flavorId,
+                name: row.flavorName,
+                grams: row.grams,
+                packGrams: row.packGrams,
+              }}
               editable={false}
             />
           </li>

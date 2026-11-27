@@ -54,31 +54,36 @@ export function StockBadge({ grams }: { grams: number }) {
 export function StockStepper({
   disabled,
   onAdjust,
+  packGrams,
 }: {
   disabled?: boolean;
   onAdjust: (delta: number) => void;
+  /** When set, each tap adds or removes one pack of this size. */
+  packGrams?: number;
 }) {
+  const step = packGrams && packGrams > 0 ? packGrams : 0;
+  if (!step) return null;
   return (
     <div className="flex shrink-0 items-center gap-1.5">
       <button
         type="button"
         disabled={disabled}
-        onClick={() => onAdjust(-20)}
+        onClick={() => onAdjust(-step)}
         className="flex h-10 min-w-10 items-center justify-center gap-0.5 rounded-lg border border-white/15 px-2 text-xs text-[var(--aura-white)]/85 transition hover:border-white/30 hover:bg-white/5 active:scale-95 disabled:opacity-40 md:h-8 md:min-w-8"
-        aria-label="Списать 20 г"
+        aria-label={`Списать 1 пачку, ${step} г`}
       >
         <Minus className="size-3.5" aria-hidden />
-        <span className="tabular-nums">20</span>
+        <span className="tabular-nums">1</span>
       </button>
       <button
         type="button"
         disabled={disabled}
-        onClick={() => onAdjust(50)}
+        onClick={() => onAdjust(step)}
         className="flex h-10 min-w-10 items-center justify-center gap-0.5 rounded-lg border border-[var(--aura-amber)]/45 bg-[var(--aura-amber)]/10 px-2 text-xs font-medium text-[#f0a65a] transition hover:bg-[var(--aura-amber)]/20 active:scale-95 disabled:opacity-40 md:h-8 md:min-w-8"
-        aria-label="Добавить 50 г"
+        aria-label={`Добавить 1 пачку, ${step} г`}
       >
         <Plus className="size-3.5" aria-hidden />
-        <span className="tabular-nums">50</span>
+        <span className="tabular-nums">1</span>
       </button>
     </div>
   );

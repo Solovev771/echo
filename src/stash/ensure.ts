@@ -144,6 +144,44 @@ async function migrate() {
       if (!/duplicate column/i.test(err instanceof Error ? err.message : String(err))) throw err;
     }
   }
+
+  await sql.execute(`CREATE TABLE IF NOT EXISTS lines (
+    id TEXT PRIMARY KEY,
+    brand_id TEXT NOT NULL REFERENCES brands(id),
+    name TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0
+  )`);
+  await sql.execute(
+    "CREATE UNIQUE INDEX IF NOT EXISTS line_brand_name ON lines(brand_id, name)",
+  );
+
+  await addColumn(sql, "flavors", "line_id", "TEXT NOT NULL DEFAULT ''");
+  await addColumn(sql, "flavors", "pack_grams", "INTEGER NOT NULL DEFAULT 0");
+  await addColumn(sql, "flavors", "price_kopecks", "INTEGER");
+  await sql.execute("DROP INDEX IF EXISTS flavor_brand_name");
+  await sql.execute(
+    "CREATE UNIQUE INDEX IF NOT EXISTS flavor_position ON flavors(brand_id, line_id, name, pack_grams)",
+  );
+
+  await addColumn(sql, "supply_lines", "line_name", "TEXT NOT NULL DEFAULT ''");
+  await addColumn(sql, "supply_lines", "pack_grams", "INTEGER NOT NULL DEFAULT 0");
+  await addColumn(sql, "supply_lines", "price_kopecks", "INTEGER");
+  await addColumn(sql, "supply_lines", "packs", "INTEGER NOT NULL DEFAULT 0");
+}
+
+async function addColumn(
+  sql: ReturnType<typeof raw>,
+  table: string,
+  column: string,
+  definition: string,
+) {
+  const info = await sql.execute(`PRAGMA table_info(${table})`);
+  if (info.rows.some((r) => r.name === column)) return;
+  try {
+    await sql.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  } catch (err) {
+    if (!/duplicate column/i.test(err instanceof Error ? err.message : String(err))) throw err;
+  }
 }
 
 async function seed() {

@@ -11,30 +11,58 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from "@/components/stash/kit";
+import { PackPicker } from "@/components/stash/flavor-actions";
 import { positions } from "@/stash/format";
+import {
+  formatPrice,
+  isPackGrams,
+  parsePriceKopecks,
+  priceInputValue,
+} from "@/stash/packs";
 import { formatGrams, shortVenueName } from "@/stash/stock-level";
 
 type Brand = { id: string; name: string };
-type Flavor = { id: string; name: string; brandId: string; grams: number };
+type Flavor = {
+  id: string;
+  name: string;
+  brandId: string;
+  grams: number;
+  lineName: string;
+  packGrams: number;
+  priceKopecks: number | null;
+};
 
 type DraftLine = {
   key: string;
   flavorId: string | null;
   brandId: string;
   brandName: string;
+  lineName: string;
   flavorName: string;
+  packGrams: number;
+  priceKopecks: number;
+  packs: number;
   grams: number;
+};
+
+type Picked = {
+  flavorId: string | null;
+  name: string;
+  lineName: string;
+  packGrams: number;
+  priceKopecks: number | null;
 };
 
 type Draft = { supplier: string; note: string; lines: DraftLine[] };
 
-const QUICK_GRAMS = [25, 50, 100, 200, 250];
+const PACK_COUNTS = [1, 2, 3, 5, 10];
 const MAX_GRAMS = 100_000;
 const EMPTY_DRAFT: Draft = { supplier: "", note: "", lines: [] };
 
 const draftKey = (venueSlug: string) => `aura-stash:supply-draft:${venueSlug}`;
-const lineKey = (brandId: string, flavorId: string | null, name: string) =>
-  flavorId ?? `new:${brandId}:${name.trim().toLowerCase()}`;
+const lineKey = (line: Pick<DraftLine, "flavorId" | "brandId" | "lineName" | "flavorName" | "packGrams">) =>
+  line.flavorId ??
+  `new:${line.brandId}:${line.lineName.trim().toLowerCase()}:${line.flavorName.trim().toLowerCase()}:${line.packGrams}`;
 
 function loadDraft(venueSlug: string, brands: Brand[], flavors: Flavor[]): Draft {
   try {
@@ -43,7 +71,13 @@ function loadDraft(venueSlug: string, brands: Brand[], flavors: Flavor[]): Draft
     const brandIds = new Set(brands.map((b) => b.id));
     const flavorById = new Map(flavors.map((f) => [f.id, f]));
     const lines = parsed.lines
-      .filter((l) => brandIds.has(l.brandId) && Number.isFinite(l.grams))
+      .filter(
+        (l) =>
+          brandIds.has(l.brandId) &&
+          isPackGrams(l.packGrams) &&
+          l.packs > 0 &&
+          Number.isFinite(l.priceKopecks),
+      )
       .map((l) => {
         // A flavor deleted since the draft was saved is re-created by name.
         if (l.flavorId && !flavorById.has(l.flavorId)) return { ...l, flavorId: null };
@@ -79,8 +113,11 @@ export function SupplyForm({
   const [brandQuery, setBrandQuery] = useState("");
   const [flavorQuery, setFlavorQuery] = useState("");
   const [existingQuery, setExistingQuery] = useState("");
-  const [picked, setPicked] = useState<{ flavorId: string | null; name: string } | null>(null);
-  const [grams, setGrams] = useState("");
+  const [picked, setPicked] = useState<Picked | null>(null);
+  const [packs, setPacks] = useState("1");
+  const [lineDraft, setLineDraft] = useState("");
+  const [packChoice, setPackChoice] = useState(0);
+  const [price, setPrice] = useState("");
   const flavorInput = useRef<HTMLInputElement>(null);
   const gramsInput = useRef<HTMLInputElement>(null);
 
@@ -115,7 +152,7 @@ export function SupplyForm({
       .filter((f) => {
         if (brandId && f.brandId === brandId) return false;
         if (!needle) return true;
-        return `${f.brandName} ${f.name}`.toLowerCase().includes(needle);
+        return `${f.brandName} ${f.lineName} ${f.name}`.toLowerCase().includes(needle);
       })
       .sort(
         (a, b) =>
@@ -148,10 +185,27 @@ export function SupplyForm({
 
   const inDraft = useMemo(() => new Map(draft.lines.map((l) => [l.key, l.grams])), [draft.lines]);
   const totalGrams = draft.lines.reduce((sum, l) => sum + (l.grams > 0 ? l.grams : 0), 0);
-  const invalidLines = draft.lines.filter((l) => !(l.grams > 0 && l.grams <= MAX_GRAMS));
+  const invalidLines = draft.lines.filter(
+    (l) => !(l.packs > 0 && l.packs <= 500 && l.grams > 0 && l.grams <= MAX_GRAMS),
+  );
 
-  const gramsValue = Number.parseInt(grams, 10);
-  const canAdd = Boolean(brand && picked && gramsValue > 0 && gramsValue <= MAX_GRAMS);
+  const packsValue = Number.parseInt(packs, 10);
+  const priceKopecks = parsePriceKopecks(price);
+  const positionReady = Boolean(
+    picked &&
+      (picked.flavorId && isPackGrams(picked.packGrams)
+        ? true
+        : lineDraft.trim() && packChoice && priceKopecks !== null),
+  );
+  const canAdd = Boolean(
+    brand &&
+      positionReady &&
+      packsValue > 0 &&
+      packsValue <= 500 &&
+      (picked?.flavorId && isPackGrams(picked.packGrams)
+        ? picked.packGrams * packsValue <= MAX_GRAMS
+        : packChoice * packsValue <= MAX_GRAMS),
+  );
 
   function chooseBrand(id: string) {
     setBrandId(id);
@@ -161,9 +215,13 @@ export function SupplyForm({
     requestAnimationFrame(() => flavorInput.current?.focus());
   }
 
-  function pick(next: { flavorId: string | null; name: string }) {
+  function pick(next: Picked) {
     setPicked(next);
     setFlavorQuery("");
+    setLineDraft(next.lineName);
+    setPackChoice(next.packGrams);
+    setPrice(priceInputValue(next.priceKopecks));
+    setPacks("1");
     requestAnimationFrame(() => gramsInput.current?.focus());
   }
 
@@ -171,34 +229,84 @@ export function SupplyForm({
     setBrandId(flavor.brandId);
     setBrandQuery("");
     setExistingQuery("");
-    pick({ flavorId: flavor.id, name: flavor.name });
+    pick({
+      flavorId: flavor.id,
+      name: flavor.name,
+      lineName: flavor.lineName,
+      packGrams: flavor.packGrams,
+      priceKopecks: flavor.priceKopecks,
+    });
   }
 
-  function addLine(e?: React.FormEvent) {
+  async function addLine(e?: React.FormEvent) {
     e?.preventDefault();
     if (!canAdd || !brand || !picked) return;
-    const key = lineKey(brand.id, picked.flavorId, picked.name);
+    const complete = Boolean(picked.flavorId && isPackGrams(picked.packGrams));
+    const packGrams = complete ? picked.packGrams : packChoice;
+    const kopecks = complete ? (picked.priceKopecks ?? 0) : priceKopecks;
+    const lineName = complete ? picked.lineName : lineDraft.trim().replace(/\s+/g, " ");
+    if (!isPackGrams(packGrams) || kopecks === null) return;
+
+    if (picked.flavorId && !complete) {
+      setBusy(true);
+      setError("");
+      try {
+        const res = await fetch("/api/stash/flavors", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            venueSlug,
+            flavorId: picked.flavorId,
+            name: picked.name,
+            lineName,
+            packGrams,
+            priceKopecks: kopecks,
+          }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setError(data.error || "Не удалось сохранить позицию");
+          return;
+        }
+      } catch {
+        setError("Нет связи с сервером");
+        return;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    const next: DraftLine = {
+      key: "",
+      flavorId: picked.flavorId,
+      brandId: brand.id,
+      brandName: brand.name,
+      lineName,
+      flavorName: picked.name,
+      packGrams,
+      priceKopecks: kopecks,
+      packs: packsValue,
+      grams: packGrams * packsValue,
+    };
+    next.key = lineKey(next);
+
     setDraft((d) => {
-      const existing = d.lines.find((l) => l.key === key);
+      const existing = d.lines.find((l) => l.key === next.key);
       const lines = existing
         ? d.lines.map((l) =>
-            l.key === key ? { ...l, grams: Math.min(MAX_GRAMS, l.grams + gramsValue) } : l,
+            l.key === next.key
+              ? {
+                  ...l,
+                  packs: Math.min(500, l.packs + next.packs),
+                  grams: Math.min(MAX_GRAMS, l.grams + next.grams),
+                }
+              : l,
           )
-        : [
-            ...d.lines,
-            {
-              key,
-              flavorId: picked.flavorId,
-              brandId: brand.id,
-              brandName: brand.name,
-              flavorName: picked.name,
-              grams: gramsValue,
-            },
-          ];
+        : [...d.lines, next];
       return { ...d, lines };
     });
     setPicked(null);
-    setGrams("");
+    setPacks("1");
     setError("");
     requestAnimationFrame(() => flavorInput.current?.focus());
   }
@@ -207,7 +315,11 @@ export function SupplyForm({
     const n = Number.parseInt(value, 10);
     setDraft((d) => ({
       ...d,
-      lines: d.lines.map((l) => (l.key === key ? { ...l, grams: Number.isFinite(n) ? n : 0 } : l)),
+      lines: d.lines.map((l) =>
+        l.key === key
+          ? { ...l, packs: Number.isFinite(n) ? n : 0, grams: (Number.isFinite(n) ? n : 0) * l.packGrams }
+          : l,
+      ),
     }));
   }
 
@@ -228,8 +340,15 @@ export function SupplyForm({
           note: draft.note.trim() || undefined,
           lines: draft.lines.map((l) =>
             l.flavorId
-              ? { flavorId: l.flavorId, grams: l.grams }
-              : { brandId: l.brandId, newFlavorName: l.flavorName, grams: l.grams },
+              ? { flavorId: l.flavorId, packs: l.packs }
+              : {
+                  brandId: l.brandId,
+                  lineName: l.lineName,
+                  newFlavorName: l.flavorName,
+                  packGrams: l.packGrams,
+                  priceKopecks: l.priceKopecks,
+                  packs: l.packs,
+                },
           ),
         }),
       });
@@ -324,8 +443,16 @@ export function SupplyForm({
               onChange={setFlavorQuery}
               placeholder="Аромат: найдите или впишите новый"
               onEnter={() => {
-                if (exactMatch) pick({ flavorId: exactMatch.id, name: exactMatch.name });
-                else if (typedName) pick({ flavorId: null, name: typedName });
+                if (exactMatch) pickExisting(exactMatch);
+                else if (typedName) {
+                  pick({
+                    flavorId: null,
+                    name: typedName,
+                    lineName: "",
+                    packGrams: 0,
+                    priceKopecks: null,
+                  });
+                }
               }}
             />
             <ul className="max-h-80 overflow-y-auto rounded-xl border border-white/8">
@@ -333,7 +460,15 @@ export function SupplyForm({
                 <li>
                   <button
                     type="button"
-                    onClick={() => pick({ flavorId: null, name: typedName })}
+                    onClick={() =>
+                      pick({
+                        flavorId: null,
+                        name: typedName,
+                        lineName: "",
+                        packGrams: 0,
+                        priceKopecks: null,
+                      })
+                    }
                     className="flex min-h-12 w-full items-center gap-2.5 bg-[var(--aura-amber)]/10 px-3 py-2 text-left text-sm text-[#f0a65a] transition hover:bg-[var(--aura-amber)]/16"
                   >
                     <Sparkles className="size-4 shrink-0" aria-hidden />
@@ -352,10 +487,19 @@ export function SupplyForm({
                   <li key={f.id} className={i > 0 || (typedName && !exactMatch) ? "border-t border-white/6" : ""}>
                     <button
                       type="button"
-                      onClick={() => pick({ flavorId: f.id, name: f.name })}
+                      onClick={() => pickExisting(f)}
                       className="flex min-h-12 w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-white/5"
                     >
-                      <span className="min-w-0 flex-1 text-sm break-words">{f.name}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm break-words">{f.name}</span>
+                        <span className="block text-[11px] text-[var(--aura-muted)]">
+                          {f.lineName || "без линейки"}
+                          {" · "}
+                          {f.packGrams ? `${f.packGrams} г` : "нет грамовки"}
+                          {" · "}
+                          {formatPrice(f.priceKopecks)}
+                        </span>
+                      </span>
                       {added ? (
                         <span className="shrink-0 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[11px] text-emerald-300 tabular-nums">
                           +{formatGrams(added)}
@@ -400,9 +544,14 @@ export function SupplyForm({
             <div className="flex items-center justify-between gap-3 rounded-xl bg-black/35 px-3 py-2">
               <span className="min-w-0">
                 <span className="block text-[10px] tracking-[0.14em] text-[var(--aura-muted)] uppercase">
-                  {picked.flavorId ? "Аромат" : "Новый аромат"}
+                  {picked.flavorId ? picked.lineName || "Аромат" : "Новая позиция"}
                 </span>
                 <span className="block font-semibold break-words">{picked.name}</span>
+                {isPackGrams(picked.packGrams) ? (
+                  <span className="block text-xs text-[var(--aura-muted)] tabular-nums">
+                    {picked.packGrams} г · {formatPrice(picked.priceKopecks)} за пачку
+                  </span>
+                ) : null}
               </span>
               <SecondaryButton
                 type="button"
@@ -415,14 +564,41 @@ export function SupplyForm({
                 Сменить
               </SecondaryButton>
             </div>
+            {!(picked.flavorId && isPackGrams(picked.packGrams)) ? (
+              <>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs text-[var(--aura-muted)]">Линейка</span>
+                  <input
+                    value={lineDraft}
+                    onChange={(e) => setLineDraft(e.target.value)}
+                    required
+                    maxLength={40}
+                    placeholder="Например: Core"
+                    className={inputClass}
+                  />
+                </label>
+                <PackPicker value={packChoice} onChange={setPackChoice} />
+                <label className="relative block">
+                  <span className="mb-1.5 block text-xs text-[var(--aura-muted)]">Цена за 1 пачку, ₽</span>
+                  <input
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="890"
+                    className={inputClass}
+                  />
+                </label>
+              </>
+            ) : null}
+            <p className="px-1 text-xs text-[var(--aura-muted)]">Сколько пачек пришло</p>
             <div className="grid grid-cols-5 gap-1.5">
-              {QUICK_GRAMS.map((q) => (
+              {PACK_COUNTS.map((q) => (
                 <button
                   key={q}
                   type="button"
-                  onClick={() => setGrams(String(q))}
+                  onClick={() => setPacks(String(q))}
                   className={`h-11 rounded-lg border text-sm tabular-nums transition active:scale-95 md:h-10 ${
-                    gramsValue === q
+                    packsValue === q
                       ? "border-[var(--aura-amber)]/60 bg-[var(--aura-amber)]/20 text-[#f0a65a]"
                       : "border-white/12 bg-white/5 hover:bg-white/10"
                   }`}
@@ -433,23 +609,23 @@ export function SupplyForm({
             </div>
             <div className="flex gap-2">
               <label className="relative min-w-0 flex-1">
-                <span className="sr-only">Граммы</span>
+                <span className="sr-only">Число пачек</span>
                 <input
                   ref={gramsInput}
                   type="number"
                   inputMode="numeric"
                   min={1}
-                  max={MAX_GRAMS}
-                  value={grams}
-                  onChange={(e) => setGrams(e.target.value)}
-                  placeholder="Свой вес"
-                  className={`${inputClass} pr-8 text-lg font-semibold tabular-nums md:text-base`}
+                  max={500}
+                  value={packs}
+                  onChange={(e) => setPacks(e.target.value)}
+                  placeholder="Пачек"
+                  className={`${inputClass} pr-16 text-lg font-semibold tabular-nums md:text-base`}
                 />
                 <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-[var(--aura-muted)]">
-                  г
+                  пач.
                 </span>
               </label>
-              <PrimaryButton type="submit" disabled={!canAdd} className="shrink-0">
+              <PrimaryButton type="submit" disabled={!canAdd || busy} className="shrink-0">
                 <Plus className="size-4" aria-hidden />
                 <span className="hidden min-[360px]:inline">Добавить в поставку</span>
                 <span className="min-[360px]:hidden">Добавить</span>
@@ -493,9 +669,13 @@ export function SupplyForm({
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[11px] tracking-[0.08em] text-[var(--aura-muted)] uppercase">
                       {line.brandName}
+                      {line.lineName ? ` · ${line.lineName}` : ""}
                     </span>
                     <span className="flex flex-wrap items-center gap-x-1.5 text-sm font-medium break-words">
                       {line.flavorName}
+                      <span className="text-xs font-normal text-[var(--aura-muted)] tabular-nums">
+                        {line.packGrams} г · {formatPrice(line.priceKopecks)}
+                      </span>
                       {line.flavorId ? null : (
                         <span className="rounded bg-sky-500/15 px-1.5 text-[10px] font-medium text-sky-300 uppercase">
                           новый
@@ -510,14 +690,14 @@ export function SupplyForm({
                       inputMode="numeric"
                       min={1}
                       max={MAX_GRAMS}
-                      value={line.grams > 0 ? line.grams : ""}
+                      value={line.packs > 0 ? line.packs : ""}
                       onChange={(e) => updateLine(line.key, e.target.value)}
                       className={`h-10 w-full rounded-lg border bg-black/40 pr-6 pl-2 text-right text-base font-semibold tabular-nums outline-none focus:border-[var(--aura-amber)] md:h-9 md:text-sm ${
                         invalid ? "border-red-400/60" : "border-white/12"
                       }`}
                     />
                     <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs text-[var(--aura-muted)]">
-                      г
+                      пач.
                     </span>
                   </label>
                   <button
@@ -697,8 +877,14 @@ function ExistingPicker({
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[11px] tracking-[0.08em] text-[var(--aura-muted)] uppercase">
                       {f.brandName}
+                      {f.lineName ? ` · ${f.lineName}` : ""}
                     </span>
-                    <span className="block text-sm break-words">{f.name}</span>
+                    <span className="block text-sm break-words">
+                      {f.name}
+                      <span className="ml-1.5 text-xs font-normal text-[var(--aura-muted)]">
+                        {f.packGrams ? `${f.packGrams} г · ${formatPrice(f.priceKopecks)}` : "без грамовки"}
+                      </span>
+                    </span>
                   </span>
                   {added ? (
                     <span className="shrink-0 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[11px] text-emerald-300 tabular-nums">

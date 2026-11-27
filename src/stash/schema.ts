@@ -36,6 +36,25 @@ export const brands = sqliteTable("brands", {
   sortOrder: integer("sort_order").notNull().default(0),
 });
 
+/** A line inside a brand, e.g. Darkside Core. Empty string is not stored here. */
+export const lines = sqliteTable(
+  "lines",
+  {
+    id: text("id").primaryKey(),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brands.id),
+    name: text("name").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [uniqueIndex("line_brand_name").on(t.brandId, t.name)],
+);
+
+/**
+ * One sellable position: brand + line + aroma + pack size.
+ * lineId "" and packGrams 0 mean an older row that has not been filled in yet.
+ * priceKopecks is the price of a single pack of that size.
+ */
 export const flavors = sqliteTable(
   "flavors",
   {
@@ -43,9 +62,12 @@ export const flavors = sqliteTable(
     brandId: text("brand_id")
       .notNull()
       .references(() => brands.id),
+    lineId: text("line_id").notNull().default(""),
     name: text("name").notNull(),
+    packGrams: integer("pack_grams").notNull().default(0),
+    priceKopecks: integer("price_kopecks"),
   },
-  (t) => [uniqueIndex("flavor_brand_name").on(t.brandId, t.name)],
+  (t) => [uniqueIndex("flavor_position").on(t.brandId, t.lineId, t.name, t.packGrams)],
 );
 
 export const stock = sqliteTable(
@@ -105,5 +127,9 @@ export const supplyLines = sqliteTable("supply_lines", {
   flavorName: text("flavor_name").notNull(),
   brandId: text("brand_id").notNull(),
   brandName: text("brand_name").notNull(),
+  lineName: text("line_name").notNull().default(""),
+  packGrams: integer("pack_grams").notNull().default(0),
+  priceKopecks: integer("price_kopecks"),
+  packs: integer("packs").notNull().default(0),
   grams: integer("grams").notNull(),
 });

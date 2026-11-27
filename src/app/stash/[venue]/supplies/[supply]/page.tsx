@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { StatCard } from "@/components/stash/stat-card";
 import { requireVenueAccess } from "@/stash/access";
 import { moscowDateTime } from "@/stash/format";
+import { formatPrice } from "@/stash/packs";
 import { formatGrams } from "@/stash/stock-level";
 import { getSupply, type SupplyLineRow } from "@/stash/supplies";
 
@@ -84,7 +85,19 @@ export default async function SupplyPage({
                   key={line.id}
                   className={`flex items-center justify-between gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-white/6" : ""}`}
                 >
-                  <span className="min-w-0 text-sm break-words">{line.flavorName}</span>
+                  <span className="min-w-0">
+                    {line.lineName ? (
+                      <span className="block truncate text-[11px] tracking-[0.08em] text-[var(--aura-muted)] uppercase">
+                        {line.lineName}
+                      </span>
+                    ) : null}
+                    <span className="block text-sm break-words">{line.flavorName}</span>
+                    {line.packGrams ? (
+                      <span className="block text-xs text-[var(--aura-muted)] tabular-nums">
+                        {line.packs} × {line.packGrams} г · {formatPrice(line.priceKopecks)} за пачку
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="shrink-0 text-sm font-semibold text-emerald-300 tabular-nums">
                     +{formatGrams(line.grams)}
                   </span>
