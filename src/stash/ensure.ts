@@ -1,5 +1,5 @@
 import { compare, hash } from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { connection } from "next/server";
 import { db, raw } from "./db";
 import { id } from "./ids";
@@ -106,18 +106,14 @@ async function seed() {
   const database = db();
   const now = new Date();
 
-  for (const venue of SEED_VENUES) {
-    const existing = await database.query.venues.findFirst({
-      where: eq(venues.slug, venue.slug),
-    });
-    if (!existing) {
-      await database.insert(venues).values({
-        id: id("ven"),
-        slug: venue.slug,
-        name: venue.name,
-        address: venue.address,
-      });
-    }
+  let allVenues = await database.query.venues.findMany();
+  const missingVenues = SEED_VENUES.filter((v) => !allVenues.some((e) => e.slug === v.slug));
+  if (missingVenues.length > 0) {
+    await database
+      .insert(venues)
+      .values(missingVenues.map((v) => ({ id: id("ven"), ...v })))
+      .onConflictDoNothing();
+    allVenues = await database.query.venues.findMany();
   }
 
   // Seed brands only into an empty table so admin renames/deletions stick.
@@ -143,13 +139,18 @@ async function seed() {
     (a): a is { email: string; password: string; name: string } =>
       Boolean(a.email && a.password),
   );
+  if (adminSpecs.length === 0) return;
 
-  const allVenues = await database.query.venues.findMany();
+  const existingAdmins = await database.query.users.findMany({
+    where: inArray(
+      users.email,
+      adminSpecs.map((a) => a.email),
+    ),
+  });
 
+  const adminIds: string[] = [];
   for (const admin of adminSpecs) {
-    let user = await database.query.users.findFirst({
-      where: eq(users.email, admin.email),
-    });
+    const user = existingAdmins.find((u) => u.email === admin.email);
     if (!user) {
       const userId = id("usr");
       await database.insert(users).values({
@@ -160,36 +161,28 @@ async function seed() {
         role: "admin",
         createdAt: now,
       });
-      user = await database.query.users.findFirst({
-        where: eq(users.id, userId),
-      });
-    } else {
-      const matches = await compare(admin.password, user.passwordHash);
-      if (!matches || user.role !== "admin") {
-        await database
-          .update(users)
-          .set({
-            passwordHash: await hash(admin.password, 10),
-            role: "admin",
-            name: admin.name,
-          })
-          .where(eq(users.id, user.id));
-      }
+      adminIds.push(userId);
+      continue;
     }
-    if (!user) continue;
-    for (const venue of allVenues) {
-      const membership = await database.query.memberships.findFirst({
-        where: (m, { and, eq: e }) =>
-          and(e(m.userId, user!.id), e(m.venueId, venue.id)),
-      });
-      if (!membership) {
-        await database.insert(memberships).values({
-          id: id("mem"),
-          userId: user.id,
-          venueId: venue.id,
-        });
-      }
+    adminIds.push(user.id);
+    const matches = await compare(admin.password, user.passwordHash);
+    if (!matches || user.role !== "admin") {
+      await database
+        .update(users)
+        .set({
+          passwordHash: await hash(admin.password, 10),
+          role: "admin",
+          name: admin.name,
+        })
+        .where(eq(users.id, user.id));
     }
+  }
+
+  const rows = adminIds.flatMap((userId) =>
+    allVenues.map((venue) => ({ id: id("mem"), userId, venueId: venue.id })),
+  );
+  if (rows.length > 0) {
+    await database.insert(memberships).values(rows).onConflictDoNothing();
   }
 }
 
