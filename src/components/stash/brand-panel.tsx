@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { SearchInput } from "@/components/stash/brand-table";
-import { StockBadge, StockStepper, useStockAdjust } from "@/components/stash/stock-controls";
+import { FlavorControls } from "@/components/stash/flavor-actions";
 import { stockLevel, type StockLevel } from "@/stash/stock-level";
 
 type FlavorRow = {
@@ -36,7 +36,6 @@ export function BrandPanel({
   const [name, setName] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
-  const { adjust, busy, error } = useStockAdjust(venueSlug);
 
   const counts = useMemo(() => {
     const c = { all: initialFlavors.length, low: 0, out: 0 };
@@ -133,8 +132,6 @@ export function BrandPanel({
           </div>
         </div>
 
-        {error ? <p className="px-4 pt-3 text-sm text-red-400">{error}</p> : null}
-
         {flavors.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-[var(--aura-muted)]">
             {initialFlavors.length === 0
@@ -146,24 +143,18 @@ export function BrandPanel({
             <div className="hidden grid-cols-[minmax(0,1fr)_6rem_auto] gap-4 px-4 pt-3 pb-2 text-[11px] tracking-[0.12em] text-[var(--aura-muted)] uppercase md:grid">
               <span>Аромат</span>
               <span className="text-center">Остаток</span>
-              <span className="w-[6.5rem] text-right">Изменить</span>
+              <span className="w-[9rem] text-right">Изменить</span>
             </div>
             <ul>
               {flavors.map((flavor) => (
                 <li
                   key={flavor.id}
-                  className="flex items-center gap-3 border-t border-white/6 px-4 py-2.5 transition hover:bg-white/[0.03] md:grid md:grid-cols-[minmax(0,1fr)_6rem_auto] md:gap-4"
+                  className="flex items-center gap-2 border-t border-white/6 px-4 py-2.5 transition hover:bg-white/[0.03] md:grid md:grid-cols-[minmax(0,1fr)_6rem_auto] md:gap-4"
                 >
                   <span className="line-clamp-2 min-w-0 flex-1 text-sm font-medium break-words md:truncate">
                     {flavor.name}
                   </span>
-                  <span className="md:text-center">
-                    <StockBadge grams={flavor.grams} />
-                  </span>
-                  <StockStepper
-                    disabled={busy === flavor.id}
-                    onAdjust={(delta) => adjust(flavor.id, delta)}
-                  />
+                  <FlavorControls venueSlug={venueSlug} flavor={flavor} />
                 </li>
               ))}
             </ul>
