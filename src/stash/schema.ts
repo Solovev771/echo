@@ -63,3 +63,23 @@ export const stock = sqliteTable(
   },
   (t) => [uniqueIndex("stock_venue_flavor").on(t.venueId, t.flavorId)],
 );
+
+export const MOVEMENT_KINDS = ["in", "out", "set", "create", "rename", "delete"] as const;
+export type MovementKind = (typeof MOVEMENT_KINDS)[number];
+
+/** Journal rows keep name snapshots and no foreign keys so history survives deletions. */
+export const movements = sqliteTable("movements", {
+  id: text("id").primaryKey(),
+  venueId: text("venue_id").notNull(),
+  flavorId: text("flavor_id").notNull(),
+  flavorName: text("flavor_name").notNull(),
+  brandId: text("brand_id").notNull(),
+  brandName: text("brand_name").notNull(),
+  userId: text("user_id").notNull(),
+  userName: text("user_name").notNull(),
+  kind: text("kind", { enum: MOVEMENT_KINDS }).notNull(),
+  delta: integer("delta").notNull().default(0),
+  gramsAfter: integer("grams_after").notNull().default(0),
+  note: text("note"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});

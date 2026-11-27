@@ -77,6 +77,28 @@ async function migrate() {
       sql: `CREATE UNIQUE INDEX IF NOT EXISTS stock_venue_flavor ON stock(venue_id, flavor_id)`,
       args: [],
     },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS movements (
+      id TEXT PRIMARY KEY,
+      venue_id TEXT NOT NULL,
+      flavor_id TEXT NOT NULL,
+      flavor_name TEXT NOT NULL,
+      brand_id TEXT NOT NULL,
+      brand_name TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      user_name TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      delta INTEGER NOT NULL DEFAULT 0,
+      grams_after INTEGER NOT NULL DEFAULT 0,
+      note TEXT,
+      created_at INTEGER NOT NULL
+    )`,
+      args: [],
+    },
+    {
+      sql: `CREATE INDEX IF NOT EXISTS movements_venue_created ON movements(venue_id, created_at)`,
+      args: [],
+    },
   ]);
 }
 
@@ -98,19 +120,12 @@ async function seed() {
     }
   }
 
-  let order = 0;
-  for (const name of SEED_BRANDS) {
-    const existing = await database.query.brands.findFirst({
-      where: eq(brands.name, name),
-    });
-    if (!existing) {
-      await database.insert(brands).values({
-        id: id("br"),
-        name,
-        sortOrder: order,
-      });
-    }
-    order += 1;
+  // Seed brands only into an empty table so admin renames/deletions stick.
+  const anyBrand = await database.query.brands.findFirst();
+  if (!anyBrand) {
+    await database.insert(brands).values(
+      SEED_BRANDS.map((name, order) => ({ id: id("br"), name, sortOrder: order })),
+    );
   }
 
   const adminSpecs = [

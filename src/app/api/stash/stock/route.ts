@@ -1,63 +1,44 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { canAccessVenue, getVenueBySlug, requireUser } from "@/stash/access";
+import { apiUser, apiVenue, jsonError, readBody } from "@/stash/api";
 import { db } from "@/stash/db";
-import { ensureStash } from "@/stash/ensure";
-import { id } from "@/stash/ids";
-import { flavors, stock } from "@/stash/schema";
+import { applyStockChange } from "@/stash/movements";
+import { flavors } from "@/stash/schema";
 
-const schema = z.object({
-  venueSlug: z.string().min(1),
-  flavorId: z.string().min(1),
-  deltaGrams: z.number().int(),
-});
+const MAX_GRAMS = 100_000;
+
+const schema = z
+  .object({
+    venueSlug: z.string().min(1),
+    flavorId: z.string().min(1),
+    deltaGrams: z.number().int().min(-MAX_GRAMS).max(MAX_GRAMS).optional(),
+    setGrams: z.number().int().min(0).max(MAX_GRAMS).optional(),
+    note: z.string().trim().max(200).optional(),
+  })
+  .refine((v) => (v.deltaGrams === undefined) !== (v.setGrams === undefined))
+  .refine((v) => v.deltaGrams !== 0);
 
 export async function POST(request: Request) {
-  await ensureStash();
-  const user = await requireUser();
-  if (!user) return NextResponse.json({ error: "Нужен вход" }, { status: 401 });
+  const auth = await apiUser();
+  if (!auth.ok) return auth.response;
+  const body = await readBody(request, schema, "Укажите количество граммов");
+  if (!body.ok) return body.response;
+  const { venueSlug, flavorId, deltaGrams, setGrams, note } = body.data;
 
-  const json = await request.json().catch(() => null);
-  const parsed = schema.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Некорректные данные" }, { status: 400 });
-  }
+  const venue = await apiVenue(auth.user, venueSlug);
+  if (!venue) return jsonError("Нет доступа", 403);
 
-  const venue = await getVenueBySlug(parsed.data.venueSlug);
-  if (!venue || !(await canAccessVenue(user, venue.id))) {
-    return NextResponse.json({ error: "Нет доступа" }, { status: 403 });
-  }
+  const flavor = await db().query.flavors.findFirst({ where: eq(flavors.id, flavorId) });
+  if (!flavor) return jsonError("Аромат не найден", 404);
 
-  const flavor = await db().query.flavors.findFirst({
-    where: eq(flavors.id, parsed.data.flavorId),
+  const result = await applyStockChange({
+    venueId: venue.id,
+    flavor,
+    user: auth.user,
+    deltaGrams,
+    setGrams,
+    note,
   });
-  if (!flavor) return NextResponse.json({ error: "Аромат не найден" }, { status: 404 });
-
-  let row = await db().query.stock.findFirst({
-    where: and(
-      eq(stock.venueId, venue.id),
-      eq(stock.flavorId, parsed.data.flavorId),
-    ),
-  });
-
-  const nextGrams = Math.max(0, (row?.grams ?? 0) + parsed.data.deltaGrams);
-  const now = new Date();
-
-  if (!row) {
-    await db().insert(stock).values({
-      id: id("st"),
-      venueId: venue.id,
-      flavorId: parsed.data.flavorId,
-      grams: nextGrams,
-      updatedAt: now,
-    });
-  } else {
-    await db()
-      .update(stock)
-      .set({ grams: nextGrams, updatedAt: now })
-      .where(eq(stock.id, row.id));
-  }
-
-  return NextResponse.json({ ok: true, grams: nextGrams });
+  return NextResponse.json({ ok: true, grams: result.after });
 }
