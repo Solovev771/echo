@@ -1,43 +1,20 @@
 import { eq } from "drizzle-orm";
-import { db } from "./db";
+import { db, raw } from "./db";
 import { id } from "./ids";
 import { KOROLEV_SKU } from "./korolev-sku";
-import { brands, flavors, memberships, stock, venues } from "./schema";
+import { brands, flavors, stock, venues } from "./schema";
 
 const fold = (value: string) => value.toLowerCase().replaceAll("ё", "е").replace(/\s+/g, " ").trim();
 
 /**
- * Puts the Королёв SKU list on that shelf only.
- * Pack size and price stay empty. A flavor is not copied onto the other points.
+ * The Королёв list belongs on Стрекалова. There is no third point.
+ * Pack size and price stay empty. Nothing is copied onto Широкая.
  */
 export async function seedKorolevShelf() {
   const database = db();
   const now = new Date();
-
-  const [venueRows, userRows] = await Promise.all([
-    database.query.venues.findMany(),
-    database.query.users.findMany(),
-  ]);
-
-  let venue = venueRows.find((row) => row.slug === "korolev");
-  if (!venue) {
-    const created = {
-      id: id("ven"),
-      slug: "korolev",
-      name: "Аура · Королёв",
-      address: "Королёв",
-    };
-    await database.insert(venues).values(created).onConflictDoNothing();
-    venue = await database.query.venues.findFirst({ where: eq(venues.slug, "korolev") });
-  }
+  const venue = await database.query.venues.findFirst({ where: eq(venues.slug, "strekalova") });
   if (!venue) return;
-
-  if (userRows.length > 0) {
-    await database
-      .insert(memberships)
-      .values(userRows.map((user) => ({ id: id("mem"), userId: user.id, venueId: venue.id })))
-      .onConflictDoNothing();
-  }
 
   let brandRows = await database.query.brands.findMany();
   const brandByName = new Map(brandRows.map((brand) => [fold(brand.name), brand]));
@@ -94,4 +71,26 @@ export async function seedKorolevShelf() {
   for (let index = 0; index < shelfStock.length; index += 60) {
     await database.insert(stock).values(shelfStock.slice(index, index + 60)).onConflictDoNothing();
   }
+}
+
+/** Королёв is Стрекалова, not a separate card. Move anything parked there, then drop the extra point. */
+export async function removeExtraKorolevVenue() {
+  const database = db();
+  const extra = await database.query.venues.findFirst({ where: eq(venues.slug, "korolev") });
+  if (!extra) return;
+  const home = await database.query.venues.findFirst({ where: eq(venues.slug, "strekalova") });
+  if (!home) return;
+
+  await raw().batch([
+    {
+      sql: `UPDATE stock SET venue_id = ? WHERE venue_id = ? AND flavor_id NOT IN (SELECT flavor_id FROM stock WHERE venue_id = ?)`,
+      args: [home.id, extra.id, home.id],
+    },
+    { sql: `DELETE FROM stock WHERE venue_id = ?`, args: [extra.id] },
+    { sql: `DELETE FROM memberships WHERE venue_id = ?`, args: [extra.id] },
+    { sql: `UPDATE movements SET venue_id = ? WHERE venue_id = ?`, args: [home.id, extra.id] },
+    { sql: `UPDATE supplies SET venue_id = ? WHERE venue_id = ?`, args: [home.id, extra.id] },
+    { sql: `UPDATE mixes SET venue_id = ? WHERE venue_id = ?`, args: [home.id, extra.id] },
+    { sql: `DELETE FROM venues WHERE id = ?`, args: [extra.id] },
+  ]);
 }

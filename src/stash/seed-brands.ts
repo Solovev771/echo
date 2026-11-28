@@ -18,11 +18,11 @@ export const SEED_VENUES = [
   {
     slug: "shirokaya",
     name: "Аура · Широкая",
-    address: "Широкая, 29",
+    address: "Москва, м. Медведково, Широкая, 29",
   },
   {
     slug: "strekalova",
     name: "Аура · Стрекалова",
-    address: "Космонавта Стрекалова, 54",
+    address: "МО, г. Королёв, ул. Космонавта Стрекалова, 54",
   },
 ] as const;

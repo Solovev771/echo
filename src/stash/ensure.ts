@@ -4,13 +4,13 @@ import { connection } from "next/server";
 import { db, raw } from "./db";
 import { id } from "./ids";
 import { brands, memberships, users, venues } from "./schema";
-import { seedKorolevShelf } from "./korolev-seed";
+import { removeExtraKorolevVenue, seedKorolevShelf } from "./korolev-seed";
 import { SEED_BRANDS, SEED_VENUES } from "./seed-brands";
 
 let ready: Promise<void> | null = null;
 
 /** Bump when the tables or the seed change. A matching value skips the migration round trips. */
-const SCHEMA_VERSION = "6";
+const SCHEMA_VERSION = "7";
 
 async function schemaIsCurrent() {
   try {
@@ -236,6 +236,15 @@ async function seed() {
       .onConflictDoNothing();
     allVenues = await database.query.venues.findMany();
   }
+
+  for (const venue of SEED_VENUES) {
+    await database
+      .update(venues)
+      .set({ name: venue.name, address: venue.address })
+      .where(eq(venues.slug, venue.slug));
+  }
+  await removeExtraKorolevVenue();
+  allVenues = await database.query.venues.findMany();
 
   // Seed brands only into an empty table so admin renames/deletions stick.
   const anyBrand = await database.query.brands.findFirst();
