@@ -3,6 +3,7 @@
 import {
   AlertTriangle,
   ArrowLeft,
+  Blend,
   ChevronRight,
   History,
   LogOut,
@@ -36,7 +37,7 @@ function currentVenueSlug(pathname: string, venues: ShellVenue[]) {
   return venues.find((v) => v.slug === segment)?.slug ?? null;
 }
 
-const VENUE_SUBPAGES = ["low", "history", "supplies"];
+const VENUE_SUBPAGES = ["low", "history", "supplies", "mixes"];
 
 /** "/low", "/history" or "/supplies" for venue sections (including nested supply pages), else "". */
 function venueSubpage(pathname: string) {
@@ -86,6 +87,14 @@ export function StashShell({
           short: "Поставки",
           icon: Truck,
           active: venueSubpage(pathname) === "/supplies",
+          badge: 0,
+        },
+        {
+          href: `/stash/${venue.slug}/mixes`,
+          label: "Миксы",
+          short: "Миксы",
+          icon: Blend,
+          active: venueSubpage(pathname) === "/mixes",
           badge: 0,
         },
         {
@@ -239,7 +248,7 @@ export function StashShell({
           >
             <div className="grid grid-cols-4">
               {sections
-                .filter((item) => !item.href.endsWith("/supplies"))
+                .filter((item) => !item.href.endsWith("/supplies") && !item.href.endsWith("/mixes"))
                 .map((item) => (
                   <BottomTab key={item.href} {...item} label={item.short} />
                 ))}
@@ -248,14 +257,14 @@ export function StashShell({
                 onClick={() => setMoreOpen(true)}
                 aria-haspopup="dialog"
                 className={`relative flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition active:bg-white/5 ${
-                  venueSubpage(pathname) === "/supplies" || moreOpen
+                  venueSubpage(pathname) === "/supplies" || venueSubpage(pathname) === "/mixes" || moreOpen
                     ? "text-[#f0a65a]"
                     : "text-[var(--aura-muted)]"
                 }`}
               >
                 <Menu className="size-5" aria-hidden />
                 Ещё
-                {venueSubpage(pathname) === "/supplies" ? (
+                {venueSubpage(pathname) === "/supplies" || venueSubpage(pathname) === "/mixes" ? (
                   <span className="absolute top-0 h-0.5 w-10 rounded-full bg-[var(--aura-glow)]" aria-hidden />
                 ) : null}
               </button>
@@ -280,6 +289,7 @@ export function StashShell({
               </Link>
               <ul className="overflow-hidden rounded-xl border border-white/10">
                 <SheetLink href={`/stash/${venue.slug}/supplies`} icon={Truck} label="Поставки" hint="Все приёмки табака" />
+                <SheetLink href={`/stash/${venue.slug}/mixes`} icon={Blend} label="Миксы" hint="Чаша из того, что на точке" />
                 <SheetLink href="/stash" icon={MapPin} label="Все точки" hint="Сводка по точкам" />
                 {user.role === "admin" ? (
                   <SheetLink href="/stash/team" icon={Users} label="Сотрудники" hint="Доступы и пароли" />

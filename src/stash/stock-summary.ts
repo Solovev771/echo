@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { cache } from "react";
 import { db } from "./db";
 import { stock, venues } from "./schema";
 import { isLowStockGrams, LOW_STOCK_GRAMS, stockLevel } from "./stock-level";
@@ -27,12 +28,12 @@ export function emptyBrandSummary(brandId: string): BrandStockSummary {
   return { brandId, flavorCount: 0, totalGrams: 0, lowCount: 0, outCount: 0 };
 }
 
-export async function venueLowGrams(venueId: string): Promise<number> {
+export const venueLowGrams = cache(async function venueLowGrams(venueId: string): Promise<number> {
   const venue = await db().query.venues.findFirst({ where: eq(venues.id, venueId) });
   return venue && isLowStockGrams(venue.lowGrams) ? venue.lowGrams : LOW_STOCK_GRAMS;
-}
+});
 
-export async function loadVenueBrandStock(
+export const loadVenueBrandStock = cache(async function loadVenueBrandStock(
   venueId: string,
 ): Promise<{ byBrand: Map<string, BrandStockSummary>; strip: VenueStockStrip }> {
   const lowGrams = await venueLowGrams(venueId);
@@ -73,7 +74,7 @@ export async function loadVenueBrandStock(
   }
 
   return { byBrand, strip };
-}
+});
 
 export type RunningLowRow = {
   flavorId: string;
@@ -85,7 +86,7 @@ export type RunningLowRow = {
 };
 
 /** Flavors at a venue that are low or out, low first, then by brand and name. */
-export async function loadRunningLow(venueId: string): Promise<RunningLowRow[]> {
+export const loadRunningLow = cache(async function loadRunningLow(venueId: string): Promise<RunningLowRow[]> {
   const lowGrams = await venueLowGrams(venueId);
   const [brandRows, flavorRows, stockRows] = await Promise.all([
     db().query.brands.findMany(),
@@ -114,4 +115,4 @@ export async function loadRunningLow(venueId: string): Promise<RunningLowRow[]> 
         a.flavorName.localeCompare(b.flavorName, "ru")
       );
     });
-}
+});

@@ -16,6 +16,10 @@ export const venues = sqliteTable("venues", {
   address: text("address").notNull(),
   /** Positive stock below this many grams counts as "running low" at this venue. */
   lowGrams: integer("low_grams").notNull().default(50),
+  /** 1: open the mixes page and a new draft appears on its own when the last one is old. */
+  mixAuto: integer("mix_auto").notNull().default(0),
+  /** 1: an automatic mix is placed on the guest menu, not left as a draft. */
+  mixPublish: integer("mix_publish").notNull().default(0),
 });
 
 export const memberships = sqliteTable(
@@ -134,4 +138,24 @@ export const supplyLines = sqliteTable("supply_lines", {
   priceKopecks: integer("price_kopecks"),
   packs: integer("packs").notNull().default(0),
   grams: integer("grams").notNull(),
+});
+
+export const MIX_STATUSES = ["draft", "menu"] as const;
+export type MixStatus = (typeof MIX_STATUSES)[number];
+export const MIX_SOURCES = ["shelf", "model", "auto"] as const;
+export type MixSource = (typeof MIX_SOURCES)[number];
+
+/** A bowl composed from what is actually on the shelf. Notes are a JSON array of names. */
+export const mixes = sqliteTable("mixes", {
+  id: text("id").primaryKey(),
+  venueId: text("venue_id").notNull(),
+  name: text("name").notNull(),
+  zone: text("zone").notNull(),
+  character: text("character").notNull(),
+  profile: text("profile").notNull(),
+  story: text("story").notNull(),
+  notes: text("notes").notNull(),
+  status: text("status", { enum: MIX_STATUSES }).notNull().default("draft"),
+  source: text("source", { enum: MIX_SOURCES }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });

@@ -168,6 +168,23 @@ async function migrate() {
   await addColumn(sql, "supply_lines", "price_kopecks", "INTEGER");
   await addColumn(sql, "supply_lines", "packs", "INTEGER NOT NULL DEFAULT 0");
   await addColumn(sql, "venues", "low_grams", "INTEGER NOT NULL DEFAULT 50");
+  await addColumn(sql, "venues", "mix_auto", "INTEGER NOT NULL DEFAULT 0");
+  await addColumn(sql, "venues", "mix_publish", "INTEGER NOT NULL DEFAULT 0");
+
+  await sql.execute(`CREATE TABLE IF NOT EXISTS mixes (
+    id TEXT PRIMARY KEY,
+    venue_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    zone TEXT NOT NULL,
+    character TEXT NOT NULL,
+    profile TEXT NOT NULL,
+    story TEXT NOT NULL,
+    notes TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft',
+    source TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )`);
+  await sql.execute("CREATE INDEX IF NOT EXISTS mix_venue_created ON mixes(venue_id, created_at)");
 }
 
 async function addColumn(

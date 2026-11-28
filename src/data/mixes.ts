@@ -8,6 +8,7 @@ export type Mix = {
   profile: string;
   story: string;
   notes: Note[];
+  fromShelf?: boolean;
 };
 
 export const specialMixes: Mix[] = [

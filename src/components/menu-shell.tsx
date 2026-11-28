@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { classicSections, specialMixes, type Mix } from "@/data/mixes";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ function MixCard({ mix, index }: { mix: Mix; index: number }) {
           {mix.name}
         </h3>
         <span className="shrink-0 font-[family-name:var(--font-body)] text-[10px] uppercase tracking-[0.18em] text-[var(--aura-muted)]">
-          Special
+          {mix.fromShelf ? "С полки" : "Special"}
         </span>
       </div>
       <div className="menu-hairline mt-2.5" />
@@ -58,6 +58,25 @@ function ClassicCard({
 
 export function MenuShell() {
   const [tab, setTab] = useState<"menu" | "special">("special");
+  const [shelf, setShelf] = useState<Mix[]>([]);
+
+  useEffect(() => {
+    let cancel = false;
+    fetch("/api/menu/mixes")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { mixes?: Mix[] } | null) => {
+        if (!cancel && data?.mixes) setShelf(data.mixes);
+      })
+      .catch(() => {});
+    return () => {
+      cancel = true;
+    };
+  }, []);
+
+  const shown = [
+    ...specialMixes,
+    ...shelf.filter((mix) => !specialMixes.some((item) => item.name === mix.name)),
+  ];
 
   return (
     <div className="menu-stage text-[var(--aura-white)]">
@@ -148,7 +167,7 @@ export function MenuShell() {
 
         {tab === "special" ? (
           <div className="grid gap-x-14 gap-y-10 md:grid-cols-2">
-            {specialMixes.map((mix, index) => (
+            {shown.map((mix, index) => (
               <MixCard key={mix.id} mix={mix} index={index} />
             ))}
           </div>
