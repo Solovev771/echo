@@ -1,7 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
+
+const fieldStyle: CSSProperties = {
+  display: "block",
+  width: "100%",
+  boxSizing: "border-box",
+  background: "rgba(0,0,0,.5)",
+  color: "#f5f5f5",
+  border: "1px solid rgba(255,255,255,.15)",
+  borderRadius: 12,
+  padding: "12px",
+  fontSize: 16,
+};
 
 export default function StashLoginPage() {
   const router = useRouter();
@@ -42,16 +54,38 @@ export default function StashLoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center px-4 py-8">
-      <p className="mb-2 text-center text-[11px] tracking-[0.28em] text-[var(--aura-amber)] uppercase">
+    <div
+      className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center px-4 py-8"
+      style={{ maxWidth: 512, margin: "0 auto", minHeight: "100dvh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "32px 16px", boxSizing: "border-box" }}
+    >
+      <p
+        className="mb-2 text-center text-[11px] tracking-[0.28em] text-[var(--aura-amber)] uppercase"
+        style={{ margin: "0 0 8px", textAlign: "center", letterSpacing: "0.28em", textTransform: "uppercase", color: "#d4782a", fontSize: 11 }}
+      >
         HookahPlace
       </p>
-      <h1 className="mb-1 text-center text-3xl font-semibold tracking-[0.2em]">AURA</h1>
-      <p className="mb-8 text-center text-sm text-[var(--aura-muted)]">Склад · вход</p>
+      <h1
+        className="mb-1 text-center text-3xl font-semibold tracking-[0.2em]"
+        style={{ margin: "0 0 4px", textAlign: "center", fontSize: 30, fontWeight: 650, letterSpacing: "0.2em" }}
+      >
+        AURA
+      </h1>
+      <p
+        className="mb-8 text-center text-sm text-[var(--aura-muted)]"
+        style={{ margin: "0 0 32px", textAlign: "center", color: "#a8a8a8", fontSize: 14 }}
+      >
+        Склад · вход
+      </p>
 
-      <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-white/10 bg-[#121110] p-5">
-        <label className="block space-y-1.5">
-          <span className="text-xs text-[var(--aura-muted)]">Email</span>
+      <form
+        onSubmit={onSubmit}
+        className="space-y-4 rounded-xl border border-white/10 bg-[#121110] p-5"
+        style={{ display: "grid", gap: 16, borderRadius: 16, border: "1px solid rgba(255,255,255,.1)", background: "#121110", padding: 20 }}
+      >
+        <label className="block space-y-1.5" style={{ display: "grid", gap: 6 }}>
+          <span className="text-xs text-[var(--aura-muted)]" style={{ color: "#a8a8a8", fontSize: 12 }}>
+            Email
+          </span>
           <input
             type="email"
             required
@@ -59,10 +93,13 @@ export default function StashLoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-base outline-none md:text-sm focus:border-[var(--aura-amber)]"
+            style={fieldStyle}
           />
         </label>
-        <label className="block space-y-1.5">
-          <span className="text-xs text-[var(--aura-muted)]">Пароль</span>
+        <label className="block space-y-1.5" style={{ display: "grid", gap: 6 }}>
+          <span className="text-xs text-[var(--aura-muted)]" style={{ color: "#a8a8a8", fontSize: 12 }}>
+            Пароль
+          </span>
           <input
             type="password"
             required
@@ -70,13 +107,25 @@ export default function StashLoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-base outline-none md:text-sm focus:border-[var(--aura-amber)]"
+            style={fieldStyle}
           />
         </label>
-        {error ? <p className="text-sm text-red-400">{error}</p> : null}
+        {error ? <p className="text-sm text-red-400" style={{ margin: 0, color: "#f87171", fontSize: 14 }}>{error}</p> : null}
         <button
           type="submit"
           disabled={loading}
           className="w-full rounded-xl bg-[var(--aura-glow)] px-3 py-3 text-sm font-semibold text-black transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
+          style={{
+            width: "100%",
+            border: 0,
+            borderRadius: 12,
+            background: "#e86a17",
+            color: "#111",
+            padding: "12px",
+            fontSize: 14,
+            fontWeight: 650,
+            opacity: loading ? 0.6 : 1,
+          }}
         >
           {loading ? "Входим…" : "Войти"}
         </button>

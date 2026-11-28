@@ -33,8 +33,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="ru"
       className={cn(display.variable, story.variable)}
+      style={{ backgroundColor: "#0b0b0b", colorScheme: "dark" }}
     >
-      <body className="font-[family-name:var(--font-body)]">{children}</body>
+      <body
+        className="font-[family-name:var(--font-body)]"
+        style={{ margin: 0, backgroundColor: "#0b0b0b", color: "#f5f5f5" }}
+      >
+        {children}
+      </body>
     </html>
   );
 }
