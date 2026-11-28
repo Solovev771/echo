@@ -42,14 +42,14 @@ export default function StashLoginPage() {
   }
 
   return (
-    <div className="flex min-h-[80dvh] flex-col justify-center">
+    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center px-4 py-8">
       <p className="mb-2 text-center text-[11px] tracking-[0.28em] text-[var(--aura-amber)] uppercase">
         HookahPlace
       </p>
       <h1 className="mb-1 text-center text-3xl font-semibold tracking-[0.2em]">AURA</h1>
       <p className="mb-8 text-center text-sm text-[var(--aura-muted)]">Склад · вход</p>
 
-      <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-white/10 bg-black/40 p-5 backdrop-blur">
+      <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-white/10 bg-[#121110] p-5">
         <label className="block space-y-1.5">
           <span className="text-xs text-[var(--aura-muted)]">Email</span>
           <input

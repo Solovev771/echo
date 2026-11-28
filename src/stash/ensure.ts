@@ -158,16 +158,6 @@ async function migrate() {
     },
   ]);
 
-  const movementColumns = await sql.execute("PRAGMA table_info(movements)");
-  if (!movementColumns.rows.some((r) => r.name === "supply_id")) {
-    try {
-      await sql.execute("ALTER TABLE movements ADD COLUMN supply_id TEXT");
-    } catch (err) {
-      // Another cold start may have added it between the check and the ALTER.
-      if (!/duplicate column/i.test(err instanceof Error ? err.message : String(err))) throw err;
-    }
-  }
-
   await sql.execute(`CREATE TABLE IF NOT EXISTS lines (
     id TEXT PRIMARY KEY,
     brand_id TEXT NOT NULL REFERENCES brands(id),
@@ -178,21 +168,24 @@ async function migrate() {
     "CREATE UNIQUE INDEX IF NOT EXISTS line_brand_name ON lines(brand_id, name)",
   );
 
-  await addColumn(sql, "flavors", "line_id", "TEXT NOT NULL DEFAULT ''");
-  await addColumn(sql, "flavors", "pack_grams", "INTEGER NOT NULL DEFAULT 0");
-  await addColumn(sql, "flavors", "price_kopecks", "INTEGER");
   await sql.execute("DROP INDEX IF EXISTS flavor_brand_name");
   await sql.execute(
     "CREATE UNIQUE INDEX IF NOT EXISTS flavor_position ON flavors(brand_id, line_id, name, pack_grams)",
   );
 
-  await addColumn(sql, "supply_lines", "line_name", "TEXT NOT NULL DEFAULT ''");
-  await addColumn(sql, "supply_lines", "pack_grams", "INTEGER NOT NULL DEFAULT 0");
-  await addColumn(sql, "supply_lines", "price_kopecks", "INTEGER");
-  await addColumn(sql, "supply_lines", "packs", "INTEGER NOT NULL DEFAULT 0");
-  await addColumn(sql, "venues", "low_grams", "INTEGER NOT NULL DEFAULT 50");
-  await addColumn(sql, "venues", "mix_auto", "INTEGER NOT NULL DEFAULT 0");
-  await addColumn(sql, "venues", "mix_publish", "INTEGER NOT NULL DEFAULT 0");
+  await ensureColumns(sql, [
+    ["movements", "supply_id", "TEXT"],
+    ["flavors", "line_id", "TEXT NOT NULL DEFAULT ''"],
+    ["flavors", "pack_grams", "INTEGER NOT NULL DEFAULT 0"],
+    ["flavors", "price_kopecks", "INTEGER"],
+    ["supply_lines", "line_name", "TEXT NOT NULL DEFAULT ''"],
+    ["supply_lines", "pack_grams", "INTEGER NOT NULL DEFAULT 0"],
+    ["supply_lines", "price_kopecks", "INTEGER"],
+    ["supply_lines", "packs", "INTEGER NOT NULL DEFAULT 0"],
+    ["venues", "low_grams", "INTEGER NOT NULL DEFAULT 50"],
+    ["venues", "mix_auto", "INTEGER NOT NULL DEFAULT 0"],
+    ["venues", "mix_publish", "INTEGER NOT NULL DEFAULT 0"],
+  ]);
 
   await sql.execute(`CREATE TABLE IF NOT EXISTS mixes (
     id TEXT PRIMARY KEY,
@@ -210,18 +203,22 @@ async function migrate() {
   await sql.execute("CREATE INDEX IF NOT EXISTS mix_venue_created ON mixes(venue_id, created_at)");
 }
 
-async function addColumn(
+async function ensureColumns(
   sql: ReturnType<typeof raw>,
-  table: string,
-  column: string,
-  definition: string,
+  columns: Array<[table: string, column: string, definition: string]>,
 ) {
-  const info = await sql.execute(`PRAGMA table_info(${table})`);
-  if (info.rows.some((r) => r.name === column)) return;
-  try {
-    await sql.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-  } catch (err) {
-    if (!/duplicate column/i.test(err instanceof Error ? err.message : String(err))) throw err;
+  const tables = [...new Set(columns.map(([table]) => table))];
+  const info = await sql.execute(
+    tables.map((table) => `SELECT '${table}' AS t, name AS c FROM pragma_table_info('${table}')`).join(" UNION ALL "),
+  );
+  const have = new Set(info.rows.map((row) => `${row.t}.${row.c}`));
+  for (const [table, column, definition] of columns) {
+    if (have.has(`${table}.${column}`)) continue;
+    try {
+      await sql.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    } catch (err) {
+      if (!/duplicate column/i.test(err instanceof Error ? err.message : String(err))) throw err;
+    }
   }
 }
 

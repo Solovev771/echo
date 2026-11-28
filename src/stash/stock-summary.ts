@@ -33,6 +33,50 @@ export const venueLowGrams = cache(async function venueLowGrams(venueId: string)
   return venue && isLowStockGrams(venue.lowGrams) ? venue.lowGrams : LOW_STOCK_GRAMS;
 });
 
+export type VenueCard = {
+  venueId: string;
+  flavorCount: number;
+  totalGrams: number;
+  attention: number;
+};
+
+/** One query for the venue list: positions, grams, and the running-low count. */
+export const venueCards = cache(async function venueCards(venueIds: string[]) {
+  const cards = new Map<string, VenueCard>();
+  if (venueIds.length === 0) return cards;
+  const result = await raw().execute({
+    sql: `
+      SELECT v.id AS venue_id,
+        COUNT(f.id) AS flavor_count,
+        COALESCE(SUM(CASE WHEN f.id IS NULL THEN 0 ELSE COALESCE(s.grams, 0) END), 0) AS total_grams,
+        SUM(CASE
+          WHEN f.id IS NULL THEN 0
+          WHEN COALESCE(s.grams, 0) <= 0 THEN 1
+          WHEN COALESCE(s.grams, 0) < CASE
+            WHEN v.low_grams IN (50, 100, 200) THEN v.low_grams
+            ELSE 50
+          END THEN 1
+          ELSE 0
+        END) AS attention
+      FROM venues v
+      LEFT JOIN flavors f ON 1
+      LEFT JOIN stock s ON s.flavor_id = f.id AND s.venue_id = v.id
+      WHERE v.id IN (${venueIds.map(() => "?").join(", ")})
+      GROUP BY v.id
+    `,
+    args: venueIds,
+  });
+  for (const row of result.rows) {
+    cards.set(String(row.venue_id), {
+      venueId: String(row.venue_id),
+      flavorCount: Number(row.flavor_count ?? 0),
+      totalGrams: Number(row.total_grams ?? 0),
+      attention: Number(row.attention ?? 0),
+    });
+  }
+  return cards;
+});
+
 /** One query for the sidebar badge. Missing stock counts as empty. */
 export const attentionCounts = cache(async function attentionCounts(venueIds: string[]) {
   const counts = new Map<string, number>();

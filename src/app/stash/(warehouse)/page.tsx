@@ -2,19 +2,18 @@ import { AlertTriangle, ChevronRight, MapPin, Scale, Smartphone, Users } from "l
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { listVenuesForUser, requireUser } from "@/stash/access";
-import { formatGrams, loadVenueBrandStock } from "@/stash/stock-summary";
+import { formatGrams, venueCards } from "@/stash/stock-summary";
 
 export default async function StashHomePage() {
   const user = await requireUser();
   if (!user) redirect("/stash/login");
 
   const venues = await listVenuesForUser(user);
-  const withStock = await Promise.all(
-    venues.map(async (venue) => ({
-      venue,
-      strip: (await loadVenueBrandStock(venue.id)).strip,
-    })),
-  );
+  const cards = await venueCards(venues.map((venue) => venue.id));
+  const withStock = venues.map((venue) => ({
+    venue,
+    card: cards.get(venue.id) ?? { flavorCount: 0, totalGrams: 0, attention: 0 },
+  }));
 
   return (
     <div className="space-y-6">
@@ -32,8 +31,8 @@ export default async function StashHomePage() {
         </p>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          {withStock.map(({ venue, strip }) => {
-            const attention = strip.lowCount + strip.outCount;
+          {withStock.map(({ venue, card }) => {
+            const attention = card.attention;
             return (
               <Link
                 key={venue.id}
@@ -54,10 +53,10 @@ export default async function StashHomePage() {
                   />
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                  <Metric label="Позиций" value={strip.flavorCount.toLocaleString("ru-RU")} />
+                  <Metric label="Позиций" value={card.flavorCount.toLocaleString("ru-RU")} />
                   <Metric
                     label="На складе"
-                    value={formatGrams(strip.totalGrams)}
+                    value={formatGrams(card.totalGrams)}
                     icon={<Scale className="size-3" aria-hidden />}
                   />
                   <Metric
