@@ -148,7 +148,7 @@ async function modelCompose(
     notes: mix.notes.map((note) => note.name),
   }));
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12000);
+  const timer = setTimeout(() => controller.abort(), 5000);
   try {
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
@@ -266,7 +266,11 @@ export async function maybeAutonomousMix(venue: { id: string; mixAuto: number; m
   }
 }
 
-export async function runAutonomousMixes() {
+let lastSweep = 0;
+
+export async function runAutonomousMixes(force = false) {
+  if (!force && Date.now() - lastSweep < 60 * 60 * 1000) return { created: [] as string[] };
+  lastSweep = Date.now();
   const list = await db().query.venues.findMany();
   const created: string[] = [];
   for (const venue of list) {

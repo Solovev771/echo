@@ -12,6 +12,6 @@ export async function GET(request: Request) {
     return jsonError("Нет доступа", 401);
   }
   await ensureStash();
-  const result = await runAutonomousMixes();
+  const result = await runAutonomousMixes(true);
   return NextResponse.json({ ok: true, ...result });
 }

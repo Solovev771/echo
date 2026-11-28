@@ -56,7 +56,7 @@ export default async function BrandPage({
         <div className="flex items-center justify-between gap-2">
           <Link
             href={`/stash/${slug}`}
-            className="-ml-2 flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm text-[var(--aura-muted)] transition hover:text-[var(--aura-white)]"
+            className="-ml-2 flex h-11 items-center gap-1.5 rounded-lg px-2 text-sm text-[var(--aura-muted)] transition hover:text-[var(--aura-white)] md:h-9"
           >
             <ArrowLeft className="size-4" aria-hidden />
             Склад
@@ -110,7 +110,7 @@ function BrandArrow({
   children: React.ReactNode;
 }) {
   const base =
-    "flex size-10 items-center justify-center rounded-lg border border-white/12 md:size-9";
+    "flex size-11 items-center justify-center rounded-lg border border-white/12 md:size-9";
   if (!href) {
     return (
       <span className={`${base} opacity-30`} aria-label={label}>

@@ -105,6 +105,12 @@
     @apply scroll-smooth;
   }
 
+  @media (pointer: coarse) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     background-color: var(--aura-black);
@@ -126,15 +132,6 @@
     linear-gradient(180deg, #16100a 0%, #0b0b0b 42%, #101010 70%, #0b0b0b 100%);
 }
 
-.menu-stage::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.22;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
-  mix-blend-mode: soft-light;
-}
 
 .menu-hairline {
   height: 1px;
@@ -155,11 +152,11 @@
 }
 
 .rise-in {
-  animation: rise-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rise-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .menu-item-row {
-  animation: rise-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rise-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .menu-item-row:hover .menu-item-name {
@@ -174,5 +171,7 @@
   .rise-in,
   .menu-item-row {
     animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

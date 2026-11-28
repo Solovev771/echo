@@ -197,7 +197,7 @@ export function StashShell({
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-30 border-b border-white/8 bg-[#0b0b0b]/85 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-md md:hidden">
+        <header className="sticky top-0 z-30 border-b border-white/8 bg-[#0b0b0b] px-4 pt-[env(safe-area-inset-top)] md:hidden">
           <div className="flex h-14 items-center justify-between gap-3">
             <Link href="/stash" className="flex items-center gap-2.5">
               <AuraMark small />
@@ -243,7 +243,7 @@ export function StashShell({
 
         {venue ? (
           <nav
-            className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#0b0b0b]/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+            className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#0b0b0b] pb-[env(safe-area-inset-bottom)] md:hidden"
             aria-label="Разделы"
           >
             <div className="grid grid-cols-4">

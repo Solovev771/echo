@@ -11,6 +11,9 @@ const display = localFont({
     { path: "../../assets/fonts/Onest-Bold.woff2", weight: "700" },
   ],
   variable: "--font-display",
+  display: "swap",
+  preload: false,
+  fallback: ["system-ui", "Segoe UI", "sans-serif"],
 });
 
 const story = localFont({

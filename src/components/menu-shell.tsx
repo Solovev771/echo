@@ -61,15 +61,17 @@ export function MenuShell() {
   const [shelf, setShelf] = useState<Mix[]>([]);
 
   useEffect(() => {
-    let cancel = false;
-    fetch("/api/menu/mixes")
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    fetch("/api/menu/mixes", { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { mixes?: Mix[] } | null) => {
-        if (!cancel && data?.mixes) setShelf(data.mixes);
+        if (data?.mixes) setShelf(data.mixes);
       })
       .catch(() => {});
     return () => {
-      cancel = true;
+      clearTimeout(timer);
+      controller.abort();
     };
   }, []);
 
@@ -80,7 +82,7 @@ export function MenuShell() {
 
   return (
     <div className="menu-stage text-[var(--aura-white)]">
-      <header className="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-5 px-5 pb-6 pt-7 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-3 sm:px-10 sm:pt-9">
+      <header className="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-3 sm:px-10 sm:pt-9">
         <div className="rise-in order-1 text-center sm:order-2">
           <p className="font-[family-name:var(--font-display)] text-[2.2rem] font-semibold lowercase leading-none tracking-tight text-[var(--aura-white)] sm:text-[2.5rem]">
             aura
@@ -90,10 +92,10 @@ export function MenuShell() {
           </p>
         </div>
 
-        <nav className="order-2 flex flex-wrap items-center justify-center gap-5 sm:order-1 sm:justify-start sm:gap-7">
+        <nav className="order-2 flex flex-wrap items-center justify-center gap-1 sm:order-1 sm:justify-start sm:gap-7">
           <a
             href="https://hpaura.ru/"
-            className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.2em] text-[var(--aura-white)]/85 transition-opacity hover:opacity-100 sm:text-xs"
+            className="inline-flex min-h-11 items-center px-3 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.14em] text-[var(--aura-white)]/85 transition-opacity hover:opacity-100 sm:px-0 sm:text-xs sm:tracking-[0.2em]"
           >
             Галерея
           </a>
@@ -101,7 +103,7 @@ export function MenuShell() {
             type="button"
             onClick={() => setTab("menu")}
             className={cn(
-              "font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.2em] transition-opacity sm:text-xs",
+              "inline-flex min-h-11 items-center px-3 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.14em] transition-opacity sm:px-0 sm:text-xs sm:tracking-[0.2em]",
               tab === "menu"
                 ? "text-[var(--aura-white)]"
                 : "text-[var(--aura-white)]/55 hover:text-[var(--aura-white)]",
@@ -114,20 +116,20 @@ export function MenuShell() {
         <div className="order-3 flex flex-wrap items-center justify-center gap-3 sm:justify-end sm:gap-5">
           <a
             href="https://hpaura.ru/"
-            className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.2em] text-[var(--aura-white)]/85 transition-opacity hover:opacity-100 sm:text-xs"
+            className="inline-flex min-h-11 items-center px-3 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.14em] text-[var(--aura-white)]/85 transition-opacity hover:opacity-100 sm:px-0 sm:text-xs sm:tracking-[0.2em]"
           >
             Контакты
           </a>
           <a
             href="https://hpaura.ru/#zeroreserve"
-            className="rounded-full border border-[var(--aura-white)]/70 px-4 py-1.5 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.18em] text-[var(--aura-white)] transition-colors hover:bg-[var(--aura-white)] hover:text-black sm:text-xs"
+            className="inline-flex min-h-11 items-center rounded-full border border-[var(--aura-white)]/70 px-4 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.14em] text-[var(--aura-white)] transition-colors hover:bg-[var(--aura-white)] hover:text-black sm:text-xs sm:tracking-[0.18em]"
           >
             Бронь
           </a>
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-6xl px-5 pb-20 pt-4 sm:px-10 sm:pt-8">
+      <main className="relative z-10 mx-auto max-w-6xl px-4 pb-[max(4.5rem,env(safe-area-inset-bottom))] pt-4 sm:px-10 sm:pt-8">
         <div className="mb-10 flex flex-wrap items-end justify-between gap-4 rise-in">
           <div>
             <p className="font-[family-name:var(--font-body)] text-[10px] uppercase tracking-[0.28em] text-[var(--aura-muted)]">
@@ -142,7 +144,7 @@ export function MenuShell() {
               type="button"
               onClick={() => setTab("menu")}
               className={cn(
-                "rounded-full border px-4 py-1.5 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.16em] transition-colors",
+                "inline-flex min-h-11 items-center rounded-full border px-4 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.14em] transition-colors sm:tracking-[0.16em]",
                 tab === "menu"
                   ? "border-[var(--aura-white)] bg-[var(--aura-white)] text-black"
                   : "border-[var(--aura-white)]/35 text-[var(--aura-white)]/70 hover:border-[var(--aura-white)]/70",
@@ -154,7 +156,7 @@ export function MenuShell() {
               type="button"
               onClick={() => setTab("special")}
               className={cn(
-                "rounded-full border px-4 py-1.5 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.16em] transition-colors",
+                "inline-flex min-h-11 items-center rounded-full border px-4 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.14em] transition-colors sm:tracking-[0.16em]",
                 tab === "special"
                   ? "border-[var(--aura-white)] bg-[var(--aura-white)] text-black"
                   : "border-[var(--aura-white)]/35 text-[var(--aura-white)]/70 hover:border-[var(--aura-white)]/70",

@@ -102,10 +102,10 @@ export function MixStudio({
     <div className="space-y-4">
       <section className="rounded-2xl border border-white/10 bg-[#121110]/85 p-3 md:p-4">
         <p className="text-sm font-medium">Сама</p>
-        <p className="mt-0.5 text-xs text-[var(--aura-muted)]">
+        <p className="mt-0.5 text-xs leading-relaxed text-[var(--aura-muted)]">
           {modelReady
-            ? "Модель подключена. Она берёт только табак, который есть на точке."
-            : "Модель на сервере ещё не подключена — микс собирается по остаткам, тем же тихим голосом. Когда появится ключ, текст напишет она."}
+            ? "Модель подключена. Раз в неделю она сама пишет микс и берёт только табак, который есть на точке."
+            : "Раз в неделю микс собирается сам из остатков точки. Когда на сервере появится ключ модели, текст будет писать она — тем же тихим голосом."}
         </p>
         {admin ? (
           <div className="mt-3 space-y-2">
@@ -150,12 +150,12 @@ export function MixStudio({
         <ul className="space-y-3">
           {mixes.map((mix) => (
             <li key={mix.id} className="rounded-2xl border border-white/10 bg-[#121110]/85 p-4">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-[11px] tracking-[0.16em] text-[#f0a65a] uppercase">{mix.zone}</p>
-                  <h2 className="mt-1 text-lg font-semibold">{mix.name}</h2>
+                  <h2 className="mt-1 text-lg font-semibold break-words">{mix.name}</h2>
                 </div>
-                <span className="shrink-0 rounded-md bg-white/8 px-2 py-1 text-[11px] text-[var(--aura-muted)]">
+                <span className="w-fit shrink-0 rounded-md bg-white/8 px-2 py-1 text-[11px] text-[var(--aura-muted)]">
                   {mix.status === "menu" ? "На меню" : "Черновик"} · {SOURCE_LABEL[mix.source]}
                 </span>
               </div>

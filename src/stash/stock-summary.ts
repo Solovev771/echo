@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { cache } from "react";
-import { db } from "./db";
+import { db, raw } from "./db";
 import { stock, venues } from "./schema";
 import { isLowStockGrams, LOW_STOCK_GRAMS, stockLevel } from "./stock-level";
 
@@ -31,6 +31,35 @@ export function emptyBrandSummary(brandId: string): BrandStockSummary {
 export const venueLowGrams = cache(async function venueLowGrams(venueId: string): Promise<number> {
   const venue = await db().query.venues.findFirst({ where: eq(venues.id, venueId) });
   return venue && isLowStockGrams(venue.lowGrams) ? venue.lowGrams : LOW_STOCK_GRAMS;
+});
+
+/** One query for the sidebar badge. Missing stock counts as empty. */
+export const attentionCounts = cache(async function attentionCounts(venueIds: string[]) {
+  const counts = new Map<string, number>();
+  if (venueIds.length === 0) return counts;
+  const result = await raw().execute({
+    sql: `
+      SELECT v.id AS venue_id,
+        SUM(CASE
+          WHEN COALESCE(s.grams, 0) <= 0 THEN 1
+          WHEN COALESCE(s.grams, 0) < CASE
+            WHEN v.low_grams IN (50, 100, 200) THEN v.low_grams
+            ELSE 50
+          END THEN 1
+          ELSE 0
+        END) AS attention
+      FROM venues v
+      CROSS JOIN flavors f
+      LEFT JOIN stock s ON s.flavor_id = f.id AND s.venue_id = v.id
+      WHERE v.id IN (${venueIds.map(() => "?").join(", ")})
+      GROUP BY v.id
+    `,
+    args: venueIds,
+  });
+  for (const row of result.rows) {
+    counts.set(String(row.venue_id), Number(row.attention ?? 0));
+  }
+  return counts;
 });
 
 export const loadVenueBrandStock = cache(async function loadVenueBrandStock(

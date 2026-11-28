@@ -2,7 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { MixStudio } from "@/components/stash/mix-studio";
 import { requireVenueAccess } from "@/stash/access";
 import { db } from "@/stash/db";
-import { maybeAutonomousMix, parseNoteNames } from "@/stash/mix-ai";
+import { parseNoteNames } from "@/stash/mix-ai";
 import { mixes } from "@/stash/schema";
 
 export default async function MixesPage({
@@ -12,7 +12,6 @@ export default async function MixesPage({
 }) {
   const { venue: slug } = await params;
   const { user, venue } = await requireVenueAccess(slug);
-  if (venue.mixAuto) await maybeAutonomousMix(venue);
 
   const rows = await db().query.mixes.findMany({
     where: eq(mixes.venueId, venue.id),

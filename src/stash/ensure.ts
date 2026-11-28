@@ -8,6 +8,29 @@ import { SEED_BRANDS, SEED_VENUES } from "./seed-brands";
 
 let ready: Promise<void> | null = null;
 
+/** Bump when the tables or the seed change. A matching value skips the migration round trips. */
+const SCHEMA_VERSION = "5";
+
+async function schemaIsCurrent() {
+  try {
+    const current = await raw().execute("SELECT value FROM stash_meta WHERE key = 'schema'");
+    return String(current.rows[0]?.value ?? "") === SCHEMA_VERSION;
+  } catch {
+    return false;
+  }
+}
+
+async function writeSchemaVersion() {
+  const sql = raw();
+  await sql.execute(
+    "CREATE TABLE IF NOT EXISTS stash_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+  );
+  await sql.execute({
+    sql: "INSERT INTO stash_meta (key, value) VALUES ('schema', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+    args: [SCHEMA_VERSION],
+  });
+}
+
 async function migrate() {
   const sql = raw();
   await sql.batch([
@@ -291,8 +314,10 @@ export async function ensureStash() {
   if (!ready) {
     ready = (async () => {
       try {
+        if (await schemaIsCurrent()) return;
         await migrate();
         await seed();
+        await writeSchemaVersion();
       } catch (err) {
         ready = null;
         throw err;
