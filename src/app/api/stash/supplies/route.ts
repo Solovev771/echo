@@ -8,10 +8,14 @@ const packs = z.number().int().min(1).max(MAX_PACKS);
 const packGrams = z.number().int().refine(isPackGrams);
 
 const lineSchema = z.union([
-  z.object({ flavorId: z.string().min(1), packs }),
+  z.object({
+    flavorId: z.string().min(1),
+    packs,
+    priceKopecks: z.number().int().min(0).max(10_000_000_00).optional(),
+  }),
   z.object({
     brandId: z.string().min(1),
-    lineName: z.string().trim().min(1).max(40),
+    lineName: z.string().trim().max(40),
     newFlavorName: z.string().trim().min(1).max(80),
     packGrams,
     priceKopecks: z.number().int().min(0).max(10_000_000_00),
@@ -32,7 +36,7 @@ export async function POST(request: Request) {
   const body = await readBody(
     request,
     schema,
-    `Проверьте строки поставки: от 1 до ${MAX_SUPPLY_LINES} позиций, у каждой линейка, грамовка и число пачек`,
+    `Проверьте строки поставки: от 1 до ${MAX_SUPPLY_LINES} позиций, у каждой грамовка, цена пачки и число пачек`,
   );
   if (!body.ok) return body.response;
 

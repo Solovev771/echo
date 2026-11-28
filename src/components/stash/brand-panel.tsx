@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { SearchInput } from "@/components/stash/brand-table";
 import { FlavorControls } from "@/components/stash/flavor-actions";
 import { PackPicker } from "@/components/stash/flavor-actions";
-import { formatPrice, parsePriceKopecks } from "@/stash/packs";
+import { formatPerGram, formatPrice, parsePriceKopecks } from "@/stash/packs";
 import { stockLevel, type StockLevel } from "@/stash/stock-level";
 
 type FlavorRow = {
@@ -281,6 +281,9 @@ export function BrandPanel({
                       {flavor.packGrams ? `${flavor.packGrams} г` : "грамовка не указана"}
                       {" · "}
                       {formatPrice(flavor.priceKopecks)}
+                      {flavor.priceKopecks != null && flavor.packGrams
+                        ? ` · ${formatPerGram(flavor.priceKopecks, flavor.packGrams)}`
+                        : ""}
                     </span>
                   </span>
                   <FlavorControls venueSlug={venueSlug} flavor={flavor} lowGrams={lowGrams} />

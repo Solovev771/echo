@@ -12,7 +12,7 @@ export default async function NewSupplyPage({
   params: Promise<{ venue: string }>;
 }) {
   const { venue: slug } = await params;
-  const { venue } = await requireVenueAccess(slug);
+  const { user, venue } = await requireVenueAccess(slug);
 
   const [brandRows, flavorRows, stockRows, lineRows] = await Promise.all([
     db().query.brands.findMany({ orderBy: [asc(brands.sortOrder), asc(brands.name)] }),
@@ -36,8 +36,8 @@ export default async function NewSupplyPage({
         <p className="text-[11px] tracking-[0.28em] text-[#f0a65a] uppercase">{venue.name}</p>
         <h1 className="mt-1 text-2xl font-semibold md:text-3xl">Новая поставка</h1>
         <p className="mt-1 text-sm text-[var(--aura-muted)]">
-          Выберите аромат из уже заведённых или создайте новый: бренд, название, граммы. Когда всё
-          внесено — проведите поставку.
+          Можно прочитать бланк или собрать список вручную. Позиции попадают на склад только после
+          «Провести».
         </p>
       </header>
 
@@ -45,6 +45,7 @@ export default async function NewSupplyPage({
         venueSlug={slug}
         venueName={venue.name}
         brands={brandRows.map((b) => ({ id: b.id, name: b.name }))}
+        canCreateBrand={user.role === "admin"}
         flavors={flavorRows.map((f) => ({
           id: f.id,
           name: f.name,

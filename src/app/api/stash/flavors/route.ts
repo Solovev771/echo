@@ -6,7 +6,7 @@ import { apiUser, apiVenue, jsonError, readBody } from "@/stash/api";
 import { db } from "@/stash/db";
 import { id } from "@/stash/ids";
 import { recordMovement } from "@/stash/movements";
-import { isPackGrams } from "@/stash/packs";
+import { isPackGrams, PACK_GRAMS_ERROR } from "@/stash/packs";
 import { brands, flavors, lines, stock } from "@/stash/schema";
 
 const nameSchema = z.string().trim().min(1).max(80);
@@ -14,7 +14,7 @@ const lineSchema = z.string().trim().min(1).max(40);
 const packSchema = z
   .number()
   .int()
-  .refine(isPackGrams, "Грамовка должна быть 20, 40, 80, 100, 120, 160, 200 или 250 г");
+  .refine(isPackGrams, PACK_GRAMS_ERROR);
 const priceSchema = z.number().int().min(0).max(10_000_000_00);
 
 const createSchema = z.object({

@@ -1,6 +1,8 @@
 /** Pack sizes a position can be. Stock is still kept in grams; one pack adds this many. */
-export const PACK_GRAMS = [20, 40, 80, 100, 120, 160, 200, 250] as const;
+export const PACK_GRAMS = [20, 25, 40, 80, 100, 120, 160, 200, 250] as const;
 export type PackGrams = (typeof PACK_GRAMS)[number];
+
+export const PACK_GRAMS_ERROR = `Грамовка должна быть ${PACK_GRAMS.join(", ")} г`;
 
 export function isPackGrams(value: number): value is PackGrams {
   return (PACK_GRAMS as readonly number[]).includes(value);
@@ -23,6 +25,13 @@ export function formatPrice(kopecks: number | null | undefined): string {
     ? rubles.toLocaleString("ru-RU")
     : rubles.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return `${text} ₽`;
+}
+
+/** What one gram of this pack costs, from the price of a single pack. */
+export function formatPerGram(kopecks: number | null | undefined, grams: number): string {
+  if (kopecks == null || grams <= 0) return "—";
+  const rubles = kopecks / 100 / grams;
+  return `${rubles.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽/г`;
 }
 
 export function priceInputValue(kopecks: number | null | undefined): string {

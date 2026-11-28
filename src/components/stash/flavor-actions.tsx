@@ -296,7 +296,7 @@ export function PackPicker({ value, onChange }: { value: number; onChange: (gram
   return (
     <div>
       <p className="mb-1.5 text-xs text-[var(--aura-muted)]">Грамовка одной пачки</p>
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
         {PACK_GRAMS.map((grams) => (
           <button
             key={grams}

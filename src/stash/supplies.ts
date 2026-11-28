@@ -3,7 +3,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import type { SessionUser } from "./auth";
 import { db, raw } from "./db";
 import { id } from "./ids";
-import { isPackGrams } from "./packs";
+import { isPackGrams, PACK_GRAMS_ERROR } from "./packs";
 import { supplies, supplyLines } from "./schema";
 
 export const MAX_SUPPLY_LINES = 200;
@@ -11,7 +11,7 @@ export const MAX_LINE_GRAMS = 100_000;
 export const MAX_PACKS = 500;
 
 export type SupplyLineInput =
-  | { flavorId: string; packs: number }
+  | { flavorId: string; packs: number; priceKopecks?: number }
   | {
       brandId: string;
       lineName: string;
@@ -71,6 +71,10 @@ async function resolveLines(lines: SupplyLineInput[]): Promise<ResolvedLine[]> {
       if (!isPackGrams(flavor.packGrams)) {
         throw new SupplyError(`У «${flavor.name}» не указана грамовка. Откройте бренд и заполните позицию.`);
       }
+      const nextPrice =
+        "priceKopecks" in line && typeof line.priceKopecks === "number"
+          ? line.priceKopecks
+          : flavor.priceKopecks;
       resolved = {
         flavorId: flavor.id,
         brandId: flavor.brandId,
@@ -78,13 +82,13 @@ async function resolveLines(lines: SupplyLineInput[]): Promise<ResolvedLine[]> {
         lineName: lineNameById.get(flavor.lineId) ?? "",
         flavorName: flavor.name,
         packGrams: flavor.packGrams,
-        priceKopecks: flavor.priceKopecks,
+        priceKopecks: nextPrice,
       };
     } else {
       const brand = brandName.get(line.brandId);
       if (brand === undefined) throw new SupplyError("Бренд не найден — обновите страницу", 404);
       if (!isPackGrams(line.packGrams)) {
-        throw new SupplyError("Грамовка должна быть 20, 40, 80, 100, 120, 160, 200 или 250 г");
+        throw new SupplyError(PACK_GRAMS_ERROR);
       }
       const name = normalize(line.newFlavorName);
       const lineName = normalize(line.lineName);
@@ -173,7 +177,13 @@ export async function postSupply({
     // under the same name is reused instead of failing the whole supply.
     let flavorExpr = "?";
     let flavorArgs: Array<string | number> = [line.flavorId ?? ""];
-    if (!line.flavorId) {
+    if (line.flavorId && line.priceKopecks != null) {
+      statements.push({
+        sql: `UPDATE flavors SET price_kopecks = ? WHERE id = ?`,
+        args: [line.priceKopecks, line.flavorId],
+      });
+    }
+    if (!line.flavorId && line.lineName) {
       const lineId = id("ln");
       statements.push(
         {
@@ -185,7 +195,7 @@ export async function postSupply({
           sql: `INSERT INTO flavors (id, brand_id, line_id, name, pack_grams, price_kopecks)
                 SELECT ?, ?, id, ?, ?, ? FROM lines WHERE brand_id = ? AND name = ?
                 ON CONFLICT(brand_id, line_id, name, pack_grams) DO UPDATE SET
-                  price_kopecks = COALESCE(flavors.price_kopecks, excluded.price_kopecks)`,
+                  price_kopecks = COALESCE(excluded.price_kopecks, flavors.price_kopecks)`,
           args: [
             line.newId,
             line.brandId,
@@ -201,6 +211,16 @@ export async function postSupply({
                      JOIN lines l ON l.id = f.line_id
                      WHERE f.brand_id = ? AND l.name = ? AND f.name = ? AND f.pack_grams = ?)`;
       flavorArgs = [line.brandId, line.lineName, line.flavorName, line.packGrams];
+    } else if (!line.flavorId) {
+      statements.push({
+        sql: `INSERT INTO flavors (id, brand_id, line_id, name, pack_grams, price_kopecks)
+              VALUES (?, ?, '', ?, ?, ?)
+              ON CONFLICT(brand_id, line_id, name, pack_grams) DO UPDATE SET
+                price_kopecks = COALESCE(excluded.price_kopecks, flavors.price_kopecks)`,
+        args: [line.newId, line.brandId, line.flavorName, line.packGrams, line.priceKopecks],
+      });
+      flavorExpr = `(SELECT id FROM flavors WHERE brand_id = ? AND line_id = '' AND name = ? AND pack_grams = ?)`;
+      flavorArgs = [line.brandId, line.flavorName, line.packGrams];
     }
 
     const journalName = line.packGrams ? `${line.flavorName} · ${line.packGrams} г` : line.flavorName;

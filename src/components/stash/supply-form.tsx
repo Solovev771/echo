@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, PackageCheck, Plus, Search, Sparkles, Trash2, X } from "lucide-react";
+import { Camera, Check, FileUp, PackageCheck, Plus, Search, Sparkles, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -12,8 +12,12 @@ import {
   SecondaryButton,
 } from "@/components/stash/kit";
 import { PackPicker } from "@/components/stash/flavor-actions";
+import { InvoiceReview } from "@/components/stash/invoice-review";
+import { filesToJpegs } from "@/components/stash/sheet-files";
 import { positions } from "@/stash/format";
+import type { ParsedRow } from "@/stash/invoice";
 import {
+  formatPerGram,
   formatPrice,
   isPackGrams,
   parsePriceKopecks,
@@ -97,17 +101,24 @@ function loadDraft(venueSlug: string, brands: Brand[], flavors: Flavor[]): Draft
 export function SupplyForm({
   venueSlug,
   venueName,
-  brands,
+  brands: brandList,
   flavors,
+  canCreateBrand,
 }: {
   venueSlug: string;
   venueName: string;
   brands: Brand[];
   flavors: Flavor[];
+  canCreateBrand: boolean;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [restored, setRestored] = useState(false);
+  const [extraBrands, setExtraBrands] = useState<Brand[]>([]);
+  const [sheet, setSheet] = useState<{ supplier: string; document: string; rows: ParsedRow[] } | null>(null);
+  const [reading, setReading] = useState<"file" | "sheet" | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const [brandId, setBrandId] = useState<string | null>(null);
   const [brandQuery, setBrandQuery] = useState("");
@@ -129,9 +140,14 @@ export function SupplyForm({
   useEffect(() => {
     // localStorage only exists in the browser, so the draft is restored after hydration.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDraft(loadDraft(venueSlug, brands, flavors));
+    setDraft(loadDraft(venueSlug, brandList, flavors));
     setRestored(true);
-  }, [venueSlug, brands, flavors]);
+  }, [venueSlug, brandList, flavors]);
+
+  const brands = useMemo(() => {
+    const seen = new Set(brandList.map((brand) => brand.id));
+    return [...brandList, ...extraBrands.filter((brand) => !seen.has(brand.id))];
+  }, [brandList, extraBrands]);
 
   useEffect(() => {
     if (!restored) return;
@@ -185,6 +201,7 @@ export function SupplyForm({
 
   const inDraft = useMemo(() => new Map(draft.lines.map((l) => [l.key, l.grams])), [draft.lines]);
   const totalGrams = draft.lines.reduce((sum, l) => sum + (l.grams > 0 ? l.grams : 0), 0);
+  const totalMoney = draft.lines.reduce((sum, l) => sum + l.priceKopecks * l.packs, 0);
   const invalidLines = draft.lines.filter(
     (l) => !(l.packs > 0 && l.packs <= 500 && l.grams > 0 && l.grams <= MAX_GRAMS),
   );
@@ -327,6 +344,88 @@ export function SupplyForm({
     setDraft((d) => ({ ...d, lines: d.lines.filter((l) => l.key !== key) }));
   }
 
+  async function readSheet(list: File[]) {
+    if (list.length === 0) return;
+    setReading("file");
+    setError("");
+    try {
+      const images = await filesToJpegs(list);
+      setReading("sheet");
+      const res = await fetch("/api/stash/supplies/read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ images }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        supplier?: string;
+        document?: string;
+        rows?: ParsedRow[];
+      };
+      if (!res.ok || !data.rows?.length) {
+        setError(data.error || "Бланк не разобрался");
+        return;
+      }
+      setSheet({ supplier: data.supplier ?? "", document: data.document ?? "", rows: data.rows });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Файл не открылся");
+    } finally {
+      setReading(null);
+      if (fileRef.current) fileRef.current.value = "";
+      if (cameraRef.current) cameraRef.current.value = "";
+    }
+  }
+
+  function acceptSheet(rows: ParsedRow[], supplier: string, document: string) {
+    setDraft((current) => {
+      let lines = [...current.lines];
+      for (const row of rows) {
+        if (!row.brandId || !isPackGrams(row.packGrams)) continue;
+        const brand = brands.find((item) => item.id === row.brandId);
+        if (!brand) continue;
+        const flavor = flavors.find(
+          (item) =>
+            item.brandId === row.brandId &&
+            item.lineName.trim().toLowerCase() === row.lineName.trim().toLowerCase() &&
+            item.name.trim().toLowerCase() === row.flavorName.trim().toLowerCase() &&
+            item.packGrams === row.packGrams,
+        );
+        const next: DraftLine = {
+          key: "",
+          flavorId: flavor?.id ?? null,
+          brandId: brand.id,
+          brandName: brand.name,
+          lineName: row.lineName.trim(),
+          flavorName: row.flavorName.trim(),
+          packGrams: row.packGrams,
+          priceKopecks: row.priceKopecks,
+          packs: row.packs,
+          grams: row.packGrams * row.packs,
+        };
+        next.key = lineKey(next);
+        const existing = lines.find((line) => line.key === next.key);
+        lines = existing
+          ? lines.map((line) =>
+              line.key === next.key
+                ? {
+                    ...line,
+                    packs: Math.min(500, line.packs + next.packs),
+                    grams: Math.min(MAX_GRAMS, line.grams + next.grams),
+                    priceKopecks: next.priceKopecks,
+                  }
+                : line,
+            )
+          : [...lines, next];
+      }
+      return {
+        ...current,
+        lines,
+        supplier: current.supplier.trim() || supplier.slice(0, 80),
+        note: current.note.trim() || (document ? `Бланк ${document}`.slice(0, 300) : current.note),
+      };
+    });
+  }
+
   async function submit() {
     setBusy(true);
     setError("");
@@ -340,7 +439,7 @@ export function SupplyForm({
           note: draft.note.trim() || undefined,
           lines: draft.lines.map((l) =>
             l.flavorId
-              ? { flavorId: l.flavorId, packs: l.packs }
+              ? { flavorId: l.flavorId, packs: l.packs, priceKopecks: l.priceKopecks }
               : {
                   brandId: l.brandId,
                   lineName: l.lineName,
@@ -376,6 +475,79 @@ export function SupplyForm({
 
   return (
     <div className="space-y-4">
+      <section className="rounded-2xl border border-white/10 bg-[#121110]/85 p-3 md:p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-[11px] tracking-[0.2em] text-[var(--aura-muted)] uppercase">Бланк</h2>
+            <p className="mt-1 text-sm text-[var(--aura-muted)]">
+              Сфотографируйте таблицу или выберите PDF, JPG, PNG, HEIC. Можно несколько страниц, до
+              трёх. Сначала проверка. На склад — только после «Провести».
+            </p>
+          </div>
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void readSheet([file]);
+            }}
+          />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif"
+            multiple
+            className="sr-only"
+            onChange={(e) => {
+              const files = e.target.files ? [...e.target.files] : [];
+              if (files.length) void readSheet(files);
+            }}
+          />
+          <div className="grid grid-cols-2 gap-2 sm:w-auto">
+            <SecondaryButton
+              type="button"
+              disabled={reading !== null}
+              onClick={() => cameraRef.current?.click()}
+            >
+              <Camera className="size-4" aria-hidden />
+              {reading === "file" ? "Готовлю…" : "Фото"}
+            </SecondaryButton>
+            <SecondaryButton
+              type="button"
+              disabled={reading !== null}
+              onClick={() => fileRef.current?.click()}
+            >
+              <FileUp className="size-4" aria-hidden />
+              {reading === "sheet" ? "Читаю…" : "Файл"}
+            </SecondaryButton>
+          </div>
+        </div>
+        {reading ? (
+          <p className="mt-3 text-sm text-[#f0a65a]">
+            {reading === "file" ? "Готовлю страницы…" : "Читаю бланк…"}
+          </p>
+        ) : null}
+      </section>
+
+      {sheet ? (
+        <InvoiceReview
+          supplier={sheet.supplier}
+          document={sheet.document}
+          rows={sheet.rows}
+          brands={brands}
+          flavors={flavors}
+          canCreateBrand={canCreateBrand}
+          onDismiss={() => setSheet(null)}
+          onAccept={acceptSheet}
+          onBrandCreated={(brand) =>
+            setExtraBrands((current) => (current.some((item) => item.id === brand.id) ? current : [...current, brand]))
+          }
+        />
+      ) : null}
+
       <section className="space-y-4 rounded-2xl border border-white/10 bg-[#121110]/85 p-3 md:p-4">
         <h2 className="px-1 text-[11px] tracking-[0.2em] text-[var(--aura-muted)] uppercase">
           Добавить позицию
@@ -550,6 +722,7 @@ export function SupplyForm({
                 {isPackGrams(picked.packGrams) ? (
                   <span className="block text-xs text-[var(--aura-muted)] tabular-nums">
                     {picked.packGrams} г · {formatPrice(picked.priceKopecks)} за пачку
+                    {picked.priceKopecks != null ? ` · ${formatPerGram(picked.priceKopecks, picked.packGrams)}` : ""}
                   </span>
                 ) : null}
               </span>
@@ -587,6 +760,11 @@ export function SupplyForm({
                     placeholder="890"
                     className={inputClass}
                   />
+                  {priceKopecks != null && packChoice > 0 ? (
+                    <span className="mt-1 block text-xs text-[var(--aura-muted)] tabular-nums">
+                      {formatPerGram(priceKopecks, packChoice)}
+                    </span>
+                  ) : null}
                 </label>
               </>
             ) : null}
@@ -674,7 +852,7 @@ export function SupplyForm({
                     <span className="flex flex-wrap items-center gap-x-1.5 text-sm font-medium break-words">
                       {line.flavorName}
                       <span className="text-xs font-normal text-[var(--aura-muted)] tabular-nums">
-                        {line.packGrams} г · {formatPrice(line.priceKopecks)}
+                        {line.packGrams} г · {formatPrice(line.priceKopecks)} · {formatPerGram(line.priceKopecks, line.packGrams)}
                       </span>
                       {line.flavorId ? null : (
                         <span className="rounded bg-sky-500/15 px-1.5 text-[10px] font-medium text-sky-300 uppercase">
@@ -787,6 +965,9 @@ export function SupplyForm({
                 точках.
               </p>
             ) : null}
+            <p className="text-sm text-[var(--aura-muted)]">
+              По ценам пачек: <span className="text-[var(--aura-white)] tabular-nums">{formatPrice(totalMoney)}</span>
+            </p>
             {draft.supplier.trim() ? (
               <p className="text-sm text-[var(--aura-muted)]">
                 Поставщик: <span className="text-[var(--aura-white)]">{draft.supplier.trim()}</span>

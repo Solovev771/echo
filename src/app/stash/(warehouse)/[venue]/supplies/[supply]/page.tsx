@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { StatCard } from "@/components/stash/stat-card";
 import { requireVenueAccess } from "@/stash/access";
 import { moscowDateTime } from "@/stash/format";
-import { formatPrice } from "@/stash/packs";
+import { formatPerGram, formatPrice } from "@/stash/packs";
 import { formatGrams } from "@/stash/stock-level";
 import { getSupply, type SupplyLineRow } from "@/stash/supplies";
 
@@ -95,6 +95,9 @@ export default async function SupplyPage({
                     {line.packGrams ? (
                       <span className="block text-xs text-[var(--aura-muted)] tabular-nums">
                         {line.packs} × {line.packGrams} г · {formatPrice(line.priceKopecks)} за пачку
+                        {line.priceKopecks != null && line.packGrams
+                          ? ` · ${formatPerGram(line.priceKopecks, line.packGrams)}`
+                          : ""}
                       </span>
                     ) : null}
                   </span>
