@@ -26,6 +26,9 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "out", label: "Нет" },
 ];
 
+/** How many positions one page lists. Five is a phone screen; ten is a laptop screen. */
+const PAGE_SIZES = [5, 10, 20, 50] as const;
+
 export function BrandPanel({
   venueSlug,
   brandId,
@@ -45,6 +48,8 @@ export function BrandPanel({
   const [pack, setPack] = useState(0);
   const [price, setPrice] = useState("");
   const [lineFilter, setLineFilter] = useState("all");
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(10);
+  const [page, setPage] = useState(0);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -74,6 +79,16 @@ export function BrandPanel({
         (!needle || `${f.lineName} ${f.name}`.toLowerCase().includes(needle)),
     );
   }, [initialFlavors, q, filter, lineFilter, lowGrams]);
+
+  const pageCount = Math.max(1, Math.ceil(flavors.length / pageSize));
+  const currentPage = Math.min(page, pageCount - 1);
+  const pageStart = currentPage * pageSize;
+  const visibleFlavors = flavors.slice(pageStart, pageStart + pageSize);
+
+  function choosePageSize(next: (typeof PAGE_SIZES)[number]) {
+    setPageSize(next);
+    setPage(0);
+  }
 
   const priceKopecks = parsePriceKopecks(price);
   const canCreate = Boolean(name.trim() && lineName.trim() && pack && priceKopecks !== null);
@@ -172,7 +187,14 @@ export function BrandPanel({
 
       <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#121110]/85">
         <div className="flex flex-col gap-3 border-b border-white/8 p-3 md:flex-row md:items-center md:justify-between md:p-4">
-          <SearchInput value={q} onChange={setQ} placeholder="Поиск аромата" />
+          <SearchInput
+            value={q}
+            onChange={(value) => {
+              setQ(value);
+              setPage(0);
+            }}
+            placeholder="Поиск аромата"
+          />
           <div className="flex gap-1.5" role="tablist" aria-label="Фильтр остатков">
             {FILTERS.map((f) => {
               const active = filter === f.key;
@@ -182,7 +204,10 @@ export function BrandPanel({
                   type="button"
                   role="tab"
                   aria-selected={active}
-                  onClick={() => setFilter(f.key)}
+                  onClick={() => {
+                    setFilter(f.key);
+                    setPage(0);
+                  }}
                   className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-sm transition md:flex-none ${
                     active
                       ? "bg-[var(--aura-amber)]/20 text-[#f0a65a] ring-1 ring-inset ring-[var(--aura-amber)]/40"
@@ -205,7 +230,10 @@ export function BrandPanel({
                 <button
                   key={line}
                   type="button"
-                  onClick={() => setLineFilter(line)}
+                  onClick={() => {
+                    setLineFilter(line);
+                    setPage(0);
+                  }}
                   className={`h-9 shrink-0 rounded-lg px-3 text-sm transition ${
                     active
                       ? "bg-white/12 text-[var(--aura-white)]"
@@ -233,7 +261,7 @@ export function BrandPanel({
               <span className="w-[9rem] text-right">Изменить</span>
             </div>
             <ul>
-              {flavors.map((flavor) => (
+              {visibleFlavors.map((flavor) => (
                 <li
                   key={flavor.id}
                   className="flex items-center gap-2 border-t border-white/6 px-4 py-2.5 transition hover:bg-white/[0.03] md:grid md:grid-cols-[minmax(0,1fr)_6rem_auto] md:gap-4"
@@ -262,8 +290,52 @@ export function BrandPanel({
           </>
         )}
 
-        <div className="border-t border-white/8 px-4 py-3 text-xs text-[var(--aura-muted)]">
-          Показано: {flavors.length} из {initialFlavors.length}
+        <div className="flex flex-col gap-3 border-t border-white/8 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-[var(--aura-muted)]">
+            {flavors.length === 0
+              ? "Нет позиций"
+              : `${pageStart + 1}–${pageStart + visibleFlavors.length} из ${flavors.length}`}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1" role="group" aria-label="Сколько позиций на странице">
+              {PAGE_SIZES.map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  aria-pressed={pageSize === size}
+                  onClick={() => choosePageSize(size)}
+                  className={`h-10 min-w-10 rounded-lg px-2 text-sm tabular-nums ${
+                    pageSize === size
+                      ? "bg-[var(--aura-amber)]/20 text-[#f0a65a] ring-1 ring-inset ring-[var(--aura-amber)]/40"
+                      : "bg-white/5 text-[var(--aura-muted)]"
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={currentPage === 0}
+                onClick={() => setPage(currentPage - 1)}
+                className="h-10 rounded-lg bg-white/5 px-3 text-sm disabled:opacity-40"
+              >
+                Назад
+              </button>
+              <span className="min-w-12 text-center text-xs text-[var(--aura-muted)] tabular-nums">
+                {currentPage + 1}/{pageCount}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage >= pageCount - 1}
+                onClick={() => setPage(currentPage + 1)}
+                className="h-10 rounded-lg bg-white/5 px-3 text-sm disabled:opacity-40"
+              >
+                Дальше
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </div>
