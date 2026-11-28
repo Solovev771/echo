@@ -22,15 +22,18 @@ export default async function VenueBrandsPage({
   });
   const { byBrand, strip } = await loadVenueBrandStock(venue.id);
 
-  const rows: BrandRow[] = list.map((brand) => {
+  const rows: BrandRow[] = list.flatMap((brand) => {
     const s = byBrand.get(brand.id);
-    return {
-      id: brand.id,
-      name: brand.name,
-      flavorCount: s?.flavorCount ?? 0,
-      totalGrams: s?.totalGrams ?? 0,
-      attention: (s?.lowCount ?? 0) + (s?.outCount ?? 0),
-    };
+    if (!s || s.flavorCount === 0) return [];
+    return [
+      {
+        id: brand.id,
+        name: brand.name,
+        flavorCount: s.flavorCount,
+        totalGrams: s.totalGrams,
+        attention: s.lowCount + s.outCount,
+      },
+    ];
   });
   const attention = strip.lowCount + strip.outCount;
 

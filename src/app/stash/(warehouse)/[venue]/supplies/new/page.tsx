@@ -46,7 +46,7 @@ export default async function NewSupplyPage({
         venueName={venue.name}
         brands={brandRows.map((b) => ({ id: b.id, name: b.name }))}
         canCreateBrand={user.role === "admin"}
-        flavors={flavorRows.map((f) => ({
+        flavors={flavorRows.filter((f) => gramsByFlavor.has(f.id)).map((f) => ({
           id: f.id,
           name: f.name,
           brandId: f.brandId,

@@ -38,7 +38,7 @@ export default async function BrandPage({
   ]);
   const gramsByFlavor = new Map(stockRows.map((s) => [s.flavorId, s.grams]));
   const lineName = new Map(lineRows.map((l) => [l.id, l.name]));
-  const rows = flavorRows.map((f) => ({
+  const rows = flavorRows.filter((f) => gramsByFlavor.has(f.id)).map((f) => ({
     id: f.id,
     name: f.name,
     grams: gramsByFlavor.get(f.id) ?? 0,
@@ -48,7 +48,7 @@ export default async function BrandPage({
   }));
   const lowGrams = isLowStockGrams(venue.lowGrams) ? venue.lowGrams : LOW_STOCK_GRAMS;
   const totalGrams = rows.reduce((sum, r) => sum + r.grams, 0);
-  const attention = rows.filter((r) => stockLevel(r.grams, lowGrams) !== "ok").length;
+  const attention = rows.filter((r) => r.packGrams > 0 && stockLevel(r.grams, lowGrams) !== "ok").length;
 
   return (
     <div className="space-y-5 md:space-y-6">

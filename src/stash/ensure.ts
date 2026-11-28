@@ -4,12 +4,13 @@ import { connection } from "next/server";
 import { db, raw } from "./db";
 import { id } from "./ids";
 import { brands, memberships, users, venues } from "./schema";
+import { seedKorolevShelf } from "./korolev-seed";
 import { SEED_BRANDS, SEED_VENUES } from "./seed-brands";
 
 let ready: Promise<void> | null = null;
 
 /** Bump when the tables or the seed change. A matching value skips the migration round trips. */
-const SCHEMA_VERSION = "5";
+const SCHEMA_VERSION = "6";
 
 async function schemaIsCurrent() {
   try {
@@ -243,6 +244,8 @@ async function seed() {
       SEED_BRANDS.map((name, order) => ({ id: id("br"), name, sortOrder: order })),
     );
   }
+
+  await seedKorolevShelf();
 
   const adminSpecs = [
     {
