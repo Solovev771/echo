@@ -48,7 +48,7 @@ export default async function BrandPage({
   }));
   const lowGrams = isLowStockGrams(venue.lowGrams) ? venue.lowGrams : LOW_STOCK_GRAMS;
   const totalGrams = rows.reduce((sum, r) => sum + r.grams, 0);
-  const attention = rows.filter((r) => r.packGrams > 0 && stockLevel(r.grams, lowGrams) !== "ok").length;
+  const attention = rows.filter((r) => stockLevel(r.grams, lowGrams) !== "ok").length;
 
   return (
     <div className="space-y-5 md:space-y-6">

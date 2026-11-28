@@ -50,7 +50,7 @@ export const venueCards = cache(async function venueCards(venueIds: string[]) {
         COUNT(s.id) AS flavor_count,
         COALESCE(SUM(s.grams), 0) AS total_grams,
         SUM(CASE
-          WHEN s.id IS NULL OR f.pack_grams = 0 THEN 0
+          WHEN s.id IS NULL THEN 0
           WHEN s.grams <= 0 THEN 1
           WHEN s.grams < CASE
             WHEN v.low_grams IN (50, 100, 200) THEN v.low_grams
@@ -60,7 +60,6 @@ export const venueCards = cache(async function venueCards(venueIds: string[]) {
         END) AS attention
       FROM venues v
       LEFT JOIN stock s ON s.venue_id = v.id
-      LEFT JOIN flavors f ON f.id = s.flavor_id
       WHERE v.id IN (${venueIds.map(() => "?").join(", ")})
       GROUP BY v.id
     `,
@@ -85,7 +84,6 @@ export const attentionCounts = cache(async function attentionCounts(venueIds: st
     sql: `
       SELECT s.venue_id AS venue_id,
         SUM(CASE
-          WHEN f.pack_grams = 0 THEN 0
           WHEN s.grams <= 0 THEN 1
           WHEN s.grams < CASE
             WHEN v.low_grams IN (50, 100, 200) THEN v.low_grams
@@ -94,7 +92,6 @@ export const attentionCounts = cache(async function attentionCounts(venueIds: st
           ELSE 0
         END) AS attention
       FROM stock s
-      JOIN flavors f ON f.id = s.flavor_id
       JOIN venues v ON v.id = s.venue_id
       WHERE s.venue_id IN (${venueIds.map(() => "?").join(", ")})
       GROUP BY s.venue_id
@@ -125,11 +122,9 @@ export const loadVenueBrandStock = cache(async function loadVenueBrandStock(
     const current = byBrand.get(flavor.brandId) ?? emptyBrandSummary(flavor.brandId);
     current.flavorCount += 1;
     current.totalGrams += grams;
-    if (flavor.packGrams > 0) {
-      const level = stockLevel(grams, lowGrams);
-      if (level === "low") current.lowCount += 1;
-      if (level === "out") current.outCount += 1;
-    }
+    const level = stockLevel(grams, lowGrams);
+    if (level === "low") current.lowCount += 1;
+    if (level === "out") current.outCount += 1;
     byBrand.set(flavor.brandId, current);
   }
 
@@ -173,7 +168,7 @@ export const loadRunningLow = cache(async function loadRunningLow(venueId: strin
   const gramsByFlavor = new Map(stockRows.map((s) => [s.flavorId, s.grams]));
 
   return flavorRows
-    .filter((f) => gramsByFlavor.has(f.id) && f.packGrams > 0)
+    .filter((f) => gramsByFlavor.has(f.id))
     .map((f) => ({
       flavorId: f.id,
       flavorName: f.name,

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type CSSProperties } from "react";
+import { AuraPulse } from "@/components/stash/aura-pulse";
 
 const fieldStyle: CSSProperties = {
   display: "block",
@@ -54,6 +55,10 @@ export default function StashLoginPage() {
   }
 
   return (
+    <div
+      style={{ position: "relative" }}
+    >
+    {loading ? <AuraPulse label="Входим…" /> : null}
     <div
       className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center px-4 py-8"
       style={{ maxWidth: 512, margin: "0 auto", minHeight: "100dvh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "32px 16px", boxSizing: "border-box" }}
@@ -130,6 +135,7 @@ export default function StashLoginPage() {
           {loading ? "Входим…" : "Войти"}
         </button>
       </form>
+    </div>
     </div>
   );
 }

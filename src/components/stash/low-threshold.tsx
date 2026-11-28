@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AuraPulse } from "@/components/stash/aura-pulse";
 import { LOW_STOCK_OPTIONS, type LowStockGrams } from "@/stash/stock-level";
 
 export function LowThresholdSwitch({
@@ -44,6 +45,7 @@ export function LowThresholdSwitch({
 
   return (
     <div className="rounded-2xl border border-white/10 bg-[#121110]/85 p-3 md:p-4">
+      {busy ? <AuraPulse label="Считаю остатки…" /> : null}
       <p className="text-sm font-medium">Считать «мало», если на точке меньше</p>
       <p className="mt-0.5 text-xs text-[var(--aura-muted)]">Только для этой точки. Ноль грамм всегда «закончилось».</p>
       <div className="mt-3 grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Порог">

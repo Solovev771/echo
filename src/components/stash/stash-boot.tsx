@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AuraPulse } from "@/components/stash/aura-pulse";
 
 /** Shown while the warehouse stream is still coming. If it never arrives, offer a way out. */
 export function StashBoot() {
@@ -12,17 +13,40 @@ export function StashBoot() {
   }, []);
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#0b0b0b] px-6 text-center text-[#f5f5f5]">
-      <p className="text-sm font-semibold tracking-[0.28em]">AURA</p>
+    <>
+      <AuraPulse label={stuck ? "Склад не ответил" : "Открываю склад…"} />
       {stuck ? (
-        <>
-          <p className="max-w-xs text-sm text-[#a8a8a8]">
-            Склад не ответил. Такое бывает на медленной сети. Обновите страницу.
+        <div
+          style={{
+            position: "fixed",
+            zIndex: 81,
+            left: 0,
+            right: 0,
+            bottom: 48,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
+            padding: "0 24px",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ margin: 0, maxWidth: 280, color: "#a8a8a8", fontSize: 14 }}>
+            Такое бывает на медленной сети. Обновите страницу.
           </p>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="flex h-11 items-center rounded-xl bg-[#e86a17] px-4 text-sm font-semibold text-black"
+            style={{
+              height: 44,
+              border: 0,
+              borderRadius: 12,
+              background: "#e86a17",
+              color: "#111",
+              padding: "0 16px",
+              fontSize: 14,
+              fontWeight: 650,
+            }}
           >
             Обновить
           </button>
@@ -31,14 +55,12 @@ export function StashBoot() {
             onClick={() => {
               window.location.href = "/stash/login";
             }}
-            className="text-sm text-[#a8a8a8]"
+            style={{ border: 0, background: "transparent", color: "#a8a8a8", fontSize: 14 }}
           >
             Ко входу
           </button>
-        </>
-      ) : (
-        <p className="text-xs text-[#a8a8a8]">Открываю склад…</p>
-      )}
-    </div>
+        </div>
+      ) : null}
+    </>
   );
 }
